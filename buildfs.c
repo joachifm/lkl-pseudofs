@@ -1,7 +1,8 @@
 /* Derived from
-- lkl/cptofs.c
-- usr/gen_init_cpio.c
-*/
+ *
+ * + lkl/cptofs.c
+ * + usr/gen_init_cpio.c
+ */
 
 #include <stdio.h>
 #include <string.h>
@@ -107,12 +108,14 @@ int main(int argc, char* argv[argc]) {
 
         /* Dispatch on type */
         type_handler do_type = 0;
+
         for (size_t i = 0; i < array_count(handlers); ++i) {
             if (strcmp(type, handlers[i].t) == 0) {
                 do_type = handlers[i].proc;
                 break;
             }
         }
+
         if (!do_type) {
             fprintf(stderr, "unrecognized type: %s\n", type);
             ret = 1;
