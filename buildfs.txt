@@ -34,3 +34,12 @@ dir /sbin 0755 0 0
 file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
 
 Timestamp will be fixed from SOURCE_DATE_EPOCH
+
+/* A procedure implementing a "type" handler.  Each supported type
+ * has a front-end that parses arguments from a space separated
+ * string (the remainder of the line after the type specifier),
+ * and a back-end that performs the work using lkl routines.
+ *
+ * Note: for creating paths within the image, we prepend `mnt`
+ * to the name.
+ */

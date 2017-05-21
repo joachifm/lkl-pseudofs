@@ -21,16 +21,14 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
-static char mnt[PATH_MAX] = {0}; /* holds the disk mount path */
+static char mnt[PATH_MAX]; /* holds the disk image mount path */
+static char sysname[PATH_MAX]; /* holds path into mounted disk image */
 
-/* A procedure implementing a "type" handler.  Each supported type
- * has a front-end that parses arguments from a space separated
- * string (the remainder of the line after the type specifier),
- * and a back-end that performs the work using lkl routines.
- *
- * Note: for creating paths within the image, we prepend `mnt`
- * to the name.
- */
+static char const* get_sysname(char const* name) {
+    (void)snprintf(sysname, PATH_MAX, "%s/%s", mnt, name);
+    return sysname;
+}
+
 typedef int (*type_handler)(char*);
 
 struct handler {
@@ -40,15 +38,47 @@ struct handler {
 
 /* Handlers */
 
+static int do_nod(char name[PATH_MAX], int mode, int uid, int gid,
+        char devtype, int maj, int min) {
+    int flags = (devtype == 'b' ? LKL_S_IFBLK : LKL_S_IFCHR) | mode;
+    int err = lkl_sys_mknod(get_sysname(name), flags, LKL_MKDEV(maj, min));
+    if (err) {
+        fprintf(stderr, "failed to create node %s: %s\n",
+                name, lkl_strerror(err));
+        return err;
+    }
+    return 0;
+}
+
+static int do_nod_line(char* args) {
+    if (!args)
+        return -EINVAL;
+
+    char name[PATH_MAX];
+    int mode;
+    int uid;
+    int gid;
+    char devtype; /* 'b' or 'c' */
+    int maj;
+    int min;
+
+    int ret = sscanf(args, "%" str(PATH_MAX) "s %o %d %d %c %d %d",
+            name, &mode, &uid, &gid, &devtype, &maj, &min);
+    if (ret != 7)
+        return -EINVAL;
+    if (ret < 0)
+        return ret;
+
+    return do_nod(name, mode, uid, gid, devtype, maj, min);
+}
+
+
 static int do_slink(char name[PATH_MAX], char target[PATH_MAX], int mode,
         int uid, int gid) {
-    char sysname[PATH_MAX] = {0};
-    snprintf(sysname, PATH_MAX, "%s/%s", mnt, name);
-
-    int err = lkl_sys_symlink(target, name);
+    int err = lkl_sys_symlink(target, get_sysname(name));
     if (err) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
-                target, name, lkl_strerror(err));
+                name, target, lkl_strerror(err));
         return err;
     }
     return 0;
@@ -74,12 +104,10 @@ static int do_slink_line(char* args) {
     return do_slink(name, target, mode, uid, gid);
 }
 
-static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
-    char sysname[PATH_MAX] = {0};
-    snprintf(sysname, PATH_MAX, "%s/%s", mnt, name);
 
-    int err = lkl_sys_mkdir(sysname, mode);
-    if (err && err != -LKL_EEXIST) {
+static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
+    int err = lkl_sys_mkdir(get_sysname(name), mode);
+    if (err) { /* err != -LKL_EEXIST to ignore already existing dir */
         fprintf(stderr, "unable to create dir '%s': %s\n", name,
                 lkl_strerror(err));
         return err;
@@ -115,6 +143,9 @@ static struct handler handlers[] = {
     { .t = "slink",
       .proc = do_slink_line,
     },
+    { .t = "nod",
+      .proc = do_nod_line,
+    },
 };
 
 /* Main */
@@ -122,12 +153,14 @@ static struct handler handlers[] = {
 int main(int argc, char* argv[argc]) {
     int ret; /* program return code */
 
+    int part = 0;
+
     struct lkl_disk disk = {0}; /* host disk handle */
     int disk_id;
-    int part = 0;
 
     lkl_host_ops.print = 0;
 
+    /* Add disks */
     disk.fd = open("fs.img", O_RDWR);
     if (disk.fd < 0) {
         fprintf(stderr, "failed to open fs.img: %s\n", strerror(errno));
@@ -142,16 +175,17 @@ int main(int argc, char* argv[argc]) {
         goto out_close;
     }
 
+    /* Init kernel */
     lkl_start_kernel(&lkl_host_ops, "mem=20M");
 
+    /* Mount image */
     if (lkl_mount_dev(disk_id, part, "ext4", 0, 0, mnt, sizeof(mnt))) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
         ret = 1;
         goto out_close;
     }
 
-    printf("mnt='%s'\n", mnt);
-
+    /* Process specs */
 #define LINE_SIZE (2 * PATH_MAX + 58)
     FILE* spec_list = stdin; /* the spec source */
     char line[LINE_SIZE]; /* current spec line */
@@ -202,6 +236,8 @@ int main(int argc, char* argv[argc]) {
 
         ret = do_type(args);
     }
+
+    /* Done */
 
 out_umount:
     (void)lkl_umount_dev(disk_id, part, 0, 1000);
