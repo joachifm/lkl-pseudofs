@@ -297,7 +297,6 @@ int main(int argc, char* argv[argc]) {
             goto out_umount;
         }
 
-        printf("do_type: %s\n", type);
         ret = do_type(args);
     }
 

@@ -25,7 +25,7 @@ where
 <min> nod minor number
 <hardlinks> space separated list of other links to file
 
-example:
+Example:
 # A simple initramfs
 dir /dev 0755 0 0
 nod /dev/console 0600 0 0 c 5 1
@@ -35,11 +35,11 @@ file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
 
 Timestamp will be fixed from SOURCE_DATE_EPOCH
 
-/* A procedure implementing a "type" handler.  Each supported type
- * has a front-end that parses arguments from a space separated
- * string (the remainder of the line after the type specifier),
- * and a back-end that performs the work using lkl routines.
- *
- * Note: for creating paths within the image, we prepend `mnt`
- * to the name.
- */
+Implementation:
+Like gen_init_cpio.c, each type has a designated handler.  Each
+handler, in turn, has a front-end that deals with parsing arguments
+that are handed off to a back-end.  The back-end uses lkl to
+construct entries within the filesystem image.
+
+Note that when referring to names within the image, they must be
+prefixed by the internal disk image mount path.
