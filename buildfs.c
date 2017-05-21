@@ -15,6 +15,34 @@
 #include <lkl.h>
 #include <lkl_host.h>
 
+#define array_count(X) (sizeof(X)/sizeof((X)[0]))
+
+typedef int (*type_handler)(char const* const);
+
+struct handler {
+    char t[8];
+    type_handler proc;
+};
+
+static int do_dir(char const* const argv) {
+    puts("do_dir");
+    return 0;
+}
+
+static int do_nod(char const* const argv) {
+    puts("do_nod");
+    return 0;
+}
+
+static struct handler handlers[] = {
+    { .t = "dir",
+      .proc = do_dir,
+    },
+    { .t = "nod",
+      .proc = do_nod,
+    },
+};
+
 int main(int argc, char* argv[argc]) {
     int ret; /* program return code */
 
@@ -48,20 +76,53 @@ int main(int argc, char* argv[argc]) {
 #define LINE_SIZE (2 * PATH_MAX + 58)
     FILE* spec_list = stdin; /* the spec source */
     char line[LINE_SIZE]; /* current spec line */
-    long lineno = 0;
-    char* type;
+    long lineno = 0; /* current line number */
+    char* type; /* holds the "type" part of the spec */
+    char* args; /* holds the remaining "args" part of the spec */
+
     while (fgets(line, LINE_SIZE, spec_list)) {
-        int type_idx;
-        size_t slen = strlen(line);
+        size_t slen = strlen(line); /* record line length before further processing */
         ++lineno;
 
         if (*line == '#')
             continue;
 
-        if (!(type = strtok(line, "\t")))
+        /* Parse type */
+        if (!(type = strtok(line, "\t"))) {
+            ret = 1;
             break;
+        }
+
+        if (*type == '\n')
+            continue;
+
+        if (slen == strlen(type))
+            continue;
+
+        /* Parse args */
+        if (!(args = strtok(NULL, "\n"))) {
+            ret = 1;
+            break;
+        }
+
+        /* Dispatch on type */
+        type_handler do_type = 0;
+        for (size_t i = 0; i < array_count(handlers); ++i) {
+            if (strcmp(type, handlers[i].t) == 0) {
+                do_type = handlers[i].proc;
+                break;
+            }
+        }
+        if (!do_type) {
+            fprintf(stderr, "unrecognized type: %s\n", type);
+            ret = 1;
+            goto out_umount;
+        }
+
+        ret = do_type(args);
     }
 
+out_umount:
     (void)lkl_umount_dev(disk_id, part, 0, 1000);
 
 out_close:
