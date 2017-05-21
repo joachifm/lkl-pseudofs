@@ -1,0 +1,36 @@
+Use lkl to build a complete fs from a specification
+
+Same syntax as gen_init_cpio.c
+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/usr/gen_init_cpio.c?id=HEAD
+
+A line is one of:
+
+# comment
+file <name> <location> <mode> <uid> <gid> [<hardlinks>]
+dir <name> <mode> <uid> <gid>
+nod <name> <mode> <uid> <gid> <dev_type> <maj> <min>
+slink <name> <target> <mode> <uid> <gid>
+pipe <name> <mode> <uid> <gid>
+sock <name> <mode> <uid> <gid>
+
+where
+<name> names the file/dir/nod/&c in the archive
+<location> source file; expands shell variables quoted with ${}
+<target> link target
+<mode> mode/perms
+<uid> user id (0=root)
+<gid> group id (0=root)
+<dev_type> device type (b=block, c=char)
+<maj> nod major number
+<min> nod minor number
+<hardlinks> space separated list of other links to file
+
+example:
+# A simple initramfs
+dir /dev 0755 0 0
+nod /dev/console 0600 0 0 c 5 1
+dir /root 0700 0 0
+dir /sbin 0755 0 0
+file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
+
+Timestamp will be fixed from SOURCE_DATE_EPOCH
