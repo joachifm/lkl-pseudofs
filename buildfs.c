@@ -21,6 +21,16 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
+static char mnt[PATH_MAX] = {0}; /* holds the disk mount path */
+
+/* A procedure implementing a "type" handler.  Each supported type
+ * has a front-end that parses arguments from a space separated
+ * string (the remainder of the line after the type specifier),
+ * and a back-end that performs the work using lkl routines.
+ *
+ * Note: for creating paths within the image, we prepend `mnt`
+ * to the name.
+ */
 typedef int (*type_handler)(char*);
 
 struct handler {
@@ -28,8 +38,13 @@ struct handler {
     type_handler proc;
 };
 
+/* Handlers */
+
 static int do_slink(char name[PATH_MAX], char target[PATH_MAX], int mode,
         int uid, int gid) {
+    char sysname[PATH_MAX] = {0};
+    snprintf(sysname, PATH_MAX, "%s/%s", mnt, name);
+
     int err = lkl_sys_symlink(target, name);
     if (err) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
@@ -60,7 +75,10 @@ static int do_slink_line(char* args) {
 }
 
 static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
-    int err = lkl_sys_mkdir(name, mode);
+    char sysname[PATH_MAX] = {0};
+    snprintf(sysname, PATH_MAX, "%s/%s", mnt, name);
+
+    int err = lkl_sys_mkdir(sysname, mode);
     if (err && err != -LKL_EEXIST) {
         fprintf(stderr, "unable to create dir '%s': %s\n", name,
                 lkl_strerror(err));
@@ -88,6 +106,8 @@ static int do_dir_line(char* args) {
     return do_dir(name, mode, uid, gid);
 }
 
+/* The handler table */
+
 static struct handler handlers[] = {
     { .t = "dir",
       .proc = do_dir_line,
@@ -97,12 +117,13 @@ static struct handler handlers[] = {
     },
 };
 
+/* Main */
+
 int main(int argc, char* argv[argc]) {
     int ret; /* program return code */
 
     struct lkl_disk disk = {0}; /* host disk handle */
     int disk_id;
-    char mnt[PATH_MAX] = {0}; /* holds the disk mount path */
     int part = 0;
 
     lkl_host_ops.print = 0;
@@ -128,6 +149,8 @@ int main(int argc, char* argv[argc]) {
         ret = 1;
         goto out_close;
     }
+
+    printf("mnt='%s'\n", mnt);
 
 #define LINE_SIZE (2 * PATH_MAX + 58)
     FILE* spec_list = stdin; /* the spec source */
