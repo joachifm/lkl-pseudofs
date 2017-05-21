@@ -30,15 +30,43 @@ struct handler {
 
 static int do_slink(char name[PATH_MAX], char target[PATH_MAX], int mode,
         int uid, int gid) {
+    int err = lkl_sys_symlink(target, name);
+    if (err) {
+        fprintf(stderr, "unable to symlink %s -> %s: %s\n",
+                target, name, lkl_strerror(err));
+        return err;
+    }
     return 0;
 }
 
+static int do_slink_line(char* args) {
+    if (!args)
+        return -EINVAL;
+
+    char name[PATH_MAX];
+    char target[PATH_MAX];
+    int mode;
+    int uid;
+    int gid;
+
+    int ret = sscanf(args, "%" str(PATH_MAX) "s %" str(PATH_MAX) "s %o %d %d",
+            name, target, &mode, &uid, &gid);
+    if (ret != 5)
+        return -EINVAL;
+    if (ret < 0)
+        return ret;
+
+    return do_slink(name, target, mode, uid, gid);
+}
+
 static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
-    int ret;
-    printf("name=%s\n", name);
-    printf("mode=%d\n", mode);
-    printf("uid=%d\n", uid);
-    printf("gid=%d\n", gid);
+    int err = lkl_sys_mkdir(name, mode);
+    if (err && err != -LKL_EEXIST) {
+        fprintf(stderr, "unable to create dir '%s': %s\n", name,
+                lkl_strerror(err));
+        return err;
+    }
+
     return 0;
 }
 
@@ -64,6 +92,9 @@ static struct handler handlers[] = {
     { .t = "dir",
       .proc = do_dir_line,
     },
+    { .t = "slink",
+      .proc = do_slink_line,
+    },
 };
 
 int main(int argc, char* argv[argc]) {
@@ -85,7 +116,7 @@ int main(int argc, char* argv[argc]) {
 
     disk_id = lkl_disk_add(&disk);
     if (disk_id < 0) {
-        fprintf(stderr, "failed to add disk: %s\n", lkl_strerror(ret));
+        fprintf(stderr, "failed to add disk: %s\n", lkl_strerror(disk_id));
         ret = 1;
         goto out_close;
     }
