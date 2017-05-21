@@ -1,7 +1,7 @@
-/* Derived from
+/*
+ * lkl stuff derived from lkl/cptofs.c
  *
- * + lkl/cptofs.c
- * + usr/gen_init_cpio.c
+ * gen_init_cpio spec parsing lifted from usr/gen_init_cpio.c
  */
 
 #include <stdio.h>
@@ -134,6 +134,66 @@ static int do_dir_line(char* args) {
     return do_dir(name, mode, uid, gid);
 }
 
+
+static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
+        int uid, int gid) {
+
+    int err = 0;
+    char const* const dest = get_sysname(name);
+
+    int sourcefd = open(source, O_RDONLY, 0);
+    if (sourcefd < 0) {
+        fprintf(stderr, "failed opening source %s for reading: %s\n",
+                source, strerror(errno));
+        err = -1;
+    }
+
+    int destfd = lkl_sys_open(dest, LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
+    if (destfd < 0) {
+        fprintf(stderr, "failed opening dest %s for writing: %s\n",
+                dest, lkl_strerror(destfd));
+        err = -1;
+    }
+
+    /* TODO: maybe lkl_sys_fallocate first? */
+    char cpbuf[4096]; /* Copy buffer, ideally fits in L1 cache */
+    /* Advise kernel that we'll be reading the entire source sequentially */
+    posix_fadvise(sourcefd, 0, 0, POSIX_FADV_SEQUENTIAL);
+    ssize_t nbytes = 0;
+    do {
+        nbytes = read(sourcefd, cpbuf, sizeof(cpbuf));
+        lkl_sys_write(destfd, cpbuf, nbytes);
+    } while (nbytes);
+
+out_close:
+    (void)close(sourcefd);
+    (void)lkl_sys_close(destfd);
+
+out:
+    return err;
+}
+
+static int do_file_line(char* args) {
+    if (!args)
+        return -EINVAL;
+
+    char name[PATH_MAX] = {0};
+    char source[PATH_MAX] = {0};
+    int mode = 0;
+    int uid = 0;
+    int gid = 0;
+
+    int ret = sscanf(args, "%" str(PATH_MAX) "s %" str(PATH_MAX) "s %o %d %d",
+            name, source, &mode, &uid, &gid);
+    if (ret != 5)
+        return -EINVAL;
+    if (ret < 0)
+        return ret;
+
+    return do_file(name, source, mode, uid, gid);
+}
+
+
 /* The handler table */
 
 static struct handler handlers[] = {
@@ -145,6 +205,9 @@ static struct handler handlers[] = {
     },
     { .t = "nod",
       .proc = do_nod_line,
+    },
+    { .t = "file",
+      .proc = do_file_line,
     },
 };
 
@@ -234,6 +297,7 @@ int main(int argc, char* argv[argc]) {
             goto out_umount;
         }
 
+        printf("do_type: %s\n", type);
         ret = do_type(args);
     }
 
