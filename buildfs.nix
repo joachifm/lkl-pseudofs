@@ -1,6 +1,11 @@
 with (import ./nixpkgs);
 with lib;
 
-runCommandCC "buildfs" { buildInputs = [ lkl ]; } ''
-cc -llkl -L${lkl.lib}/lib -o $out ${./buildfs.c}
+runCommandCC "buildfs"
+{ nativeBuildInputs = [ pkgconfig ];
+  buildInputs = [ lkl ];
+  src = ./buildfs.c;
+}
+''
+cc $(pkg-config --cflags --libs lkl) -o $out $src
 ''
