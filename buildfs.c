@@ -18,29 +18,51 @@
 
 #define array_count(X) (sizeof(X)/sizeof((X)[0]))
 
-typedef int (*type_handler)(char const* const);
+#define xstr(s) #s
+#define str(s) xstr(s)
+
+typedef int (*type_handler)(char*);
 
 struct handler {
     char t[8];
     type_handler proc;
 };
 
-static int do_dir(char const* const argv) {
-    puts("do_dir");
+static int do_slink(char name[PATH_MAX], char target[PATH_MAX], int mode,
+        int uid, int gid) {
     return 0;
 }
 
-static int do_nod(char const* const argv) {
-    puts("do_nod");
+static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
+    int ret;
+    printf("name=%s\n", name);
+    printf("mode=%d\n", mode);
+    printf("uid=%d\n", uid);
+    printf("gid=%d\n", gid);
     return 0;
+}
+
+static int do_dir_line(char* args) {
+    if (!args)
+        return -EINVAL;
+
+    char name[PATH_MAX] = {0};
+    int mode = 0;
+    int uid = 0;
+    int gid = 0;
+
+    int ret = sscanf(args, "%" str(PATH_MAX) "s %o %d %d", name, &mode, &uid, &gid);
+    if (ret != 4)
+        return -EINVAL;
+    if (ret < 0)
+        return ret;
+
+    return do_dir(name, mode, uid, gid);
 }
 
 static struct handler handlers[] = {
     { .t = "dir",
-      .proc = do_dir,
-    },
-    { .t = "nod",
-      .proc = do_nod,
+      .proc = do_dir_line,
     },
 };
 
@@ -51,6 +73,8 @@ int main(int argc, char* argv[argc]) {
     int disk_id;
     char mnt[PATH_MAX] = {0}; /* holds the disk mount path */
     int part = 0;
+
+    lkl_host_ops.print = 0;
 
     disk.fd = open("fs.img", O_RDWR);
     if (disk.fd < 0) {
@@ -101,7 +125,7 @@ int main(int argc, char* argv[argc]) {
             continue;
 
         /* Parse args */
-        if (!(args = strtok(NULL, "\n"))) {
+        if (!(args = strtok(0, "\n"))) {
             ret = 1;
             break;
         }
