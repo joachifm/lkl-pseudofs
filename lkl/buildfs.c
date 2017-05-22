@@ -31,6 +31,10 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 4096L
+#endif
+
 static char mnt[PATH_MAX]; /* holds the disk image mount path */
 static char sysname[PATH_MAX]; /* holds path into mounted disk image */
 
@@ -227,39 +231,41 @@ static int do_dir_line(char* args) {
 
 static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
         int uid, int gid) {
-
     int err = 0;
-    char const* const dest = get_sysname(name);
 
-    int sourcefd = open(source, O_RDONLY, 0);
-    if (sourcefd < 0) {
-        fprintf(stderr, "failed opening source %s for reading: %s\n",
-                source, strerror(errno));
-        err = -1;
-    }
-    /* Advise kernel that we'll be reading the source sequentially, once */
-    posix_fadvise(sourcefd, 0, 0, POSIX_FADV_SEQUENTIAL | POSIX_FADV_WILLNEED | POSIX_FADV_NOREUSE);
+    char const* const outfile = get_sysname(name);
 
-    int destfd = lkl_sys_open(dest, LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
-    if (destfd < 0) {
-        fprintf(stderr, "failed opening dest %s for writing: %s\n",
-                dest, lkl_strerror(destfd));
-        err = -1;
+    int infd = open(source, O_RDONLY, 0);
+    if (infd < 0) {
+        fprintf(stderr, "failed to open infile for reading: %s\n",
+                strerror(errno));
+        err = -errno;
+        goto out;
     }
 
-    /* TODO: consider lkl_sys_fallocate destination first */
-    /* TODO: consider lkl_sendfile */
+    if (posix_fadvise(infd, 0, 0, POSIX_FADV_SEQUENTIAL) != 0) {
+        fprintf(stderr, "failed to fadvise infile: %s\n", strerror(errno));
+        err = -errno;
+        goto out;
+    }
 
-    char cpbuf[4096]; // copy buffer, ideally fits in cpu cache
-    ssize_t nbytes;
-    while ((nbytes = read(sourcefd, cpbuf, sizeof(cpbuf))) > 0)
-        lkl_sys_write(destfd, cpbuf, nbytes);
+    int outfd = lkl_sys_open(get_sysname(name), LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT,
+            mode);
+    if (outfd < 0) {
+        fprintf(stderr, "failed to open outfile for writing: %s\n",
+                lkl_strerror(outfd));
+        err = outfd;
+        goto out;
+    }
 
-out_close:
-    (void)close(sourcefd);
-    (void)lkl_sys_close(destfd);
+    char cpbuf[PAGE_SIZE];
+    ssize_t ibs;
+    while ((ibs = read(infd, cpbuf, sizeof(cpbuf))) > 0)
+        lkl_sys_write(outfd, cpbuf, ibs);
 
 out:
+    close(infd);
+    lkl_sys_close(outfd);
     return err;
 }
 
