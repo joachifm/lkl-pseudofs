@@ -313,7 +313,7 @@ int main(int argc, char* argv[argc]) {
         goto out_close;
     }
 
-    lkl_start_kernel(&lkl_host_ops, "mem=20M");
+    lkl_start_kernel(&lkl_host_ops, "mem=10M");
 
     if (lkl_mount_dev(disk_id, part, "ext4", 0, 0, mnt, sizeof(mnt))) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
