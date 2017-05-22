@@ -48,15 +48,49 @@ struct handler {
 
 /* Handlers */
 
-static int do_sock(char name[PATH_MAX], int mode, int uid, int gid) {
-    int err = lkl_sys_mknod(get_sysname(name), mode | LKL_S_IFSOCK, LKL_MKDEV(0, 0));
+static int do_generic_file(char name[PATH_MAX], int mode, int uid, int gid,
+        char type, int maj, int min) {
+
+    char const* pathname = get_sysname(name);
+    int err = 0;
+    dev_t dev = LKL_MKDEV(maj, min);
+    int typeflag = LKL_S_IFREG;
+
+    switch (type) {
+        case 'c':
+            typeflag = LKL_S_IFCHR;
+            break;
+        case 'b':
+            typeflag = LKL_S_IFBLK;
+            break;
+        case 's':
+            typeflag = LKL_S_IFSOCK;
+            break;
+        case 'p':
+            typeflag = LKL_S_IFIFO;
+            break;
+        case 'r':
+            typeflag = LKL_S_IFREG;
+            break;
+    }
+
+    err = lkl_sys_mknod(pathname, mode | typeflag, dev);
     if (err) {
-        fprintf(stderr, "failed to create node %s: %s\n",
-                name, lkl_strerror(err));
+        fprintf(stderr, "failed to create node %s: %s\n", name, lkl_strerror(err));
+        return err;
+    }
+
+    err = lkl_sys_chown(pathname, uid, gid);
+    if (err) {
+        fprintf(stderr, "failed to set owner %s: %s\n", name, lkl_strerror(err));
         return err;
     }
 
     return 0;
+}
+
+static int do_sock(char name[PATH_MAX], int mode, int uid, int gid) {
+    return do_generic_file(name, mode, uid, gid, 's', 0, 0);
 }
 
 static int do_sock_line(char* args) {
@@ -79,14 +113,7 @@ static int do_sock_line(char* args) {
 
 
 static int do_pipe(char name[PATH_MAX], int mode, int uid, int gid) {
-    int err = lkl_sys_mknod(get_sysname(name), mode | LKL_S_IFIFO, LKL_MKDEV(0, 0));
-    if (err) {
-        fprintf(stderr, "failed to create node %s: %s\n",
-                name, lkl_strerror(err));
-        return err;
-    }
-
-    return 0;
+    return do_generic_file(name, mode, uid, gid, 'p', 0, 0);
 }
 
 static int do_pipe_line(char* args) {
@@ -110,14 +137,7 @@ static int do_pipe_line(char* args) {
 
 static int do_nod(char name[PATH_MAX], int mode, int uid, int gid,
         char devtype, int maj, int min) {
-    int flags = (devtype == 'b' ? LKL_S_IFBLK : LKL_S_IFCHR) | mode;
-    int err = lkl_sys_mknod(get_sysname(name), flags, LKL_MKDEV(maj, min));
-    if (err) {
-        fprintf(stderr, "failed to create node %s: %s\n",
-                name, lkl_strerror(err));
-        return err;
-    }
-    return 0;
+    return do_generic_file(name, mode, uid, gid, devtype, maj, min);
 }
 
 static int do_nod_line(char* args) {
