@@ -55,7 +55,7 @@ struct handler {
 static int do_generic_file(char name[PATH_MAX], int mode, int uid, int gid,
         char type, int maj, int min) {
 
-    char const* pathname = get_sysname(name);
+    char const* const pathname = get_sysname(name);
     int err = 0;
     dev_t dev = LKL_MKDEV(maj, min);
     int typeflag = LKL_S_IFREG;
