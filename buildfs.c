@@ -230,12 +230,10 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
     /* TODO: consider lkl_sys_fallocate destination first */
     /* TODO: consider lkl_sendfile */
 
-    char cpbuf[4096]; // Copy buffer, ideally fits in L1 cache
-    ssize_t nbytes = 0;
-    do {
-        nbytes = read(sourcefd, cpbuf, sizeof(cpbuf));
+    char cpbuf[4096]; // copy buffer, ideally fits in cpu cache
+    ssize_t nbytes;
+    while ((nbytes = read(sourcefd, cpbuf, sizeof(cpbuf))) > 0)
         lkl_sys_write(destfd, cpbuf, nbytes);
-    } while (nbytes);
 
 out_close:
     (void)close(sourcefd);
