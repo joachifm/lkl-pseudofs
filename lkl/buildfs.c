@@ -94,7 +94,7 @@ static int do_sock_line(char* args) {
         return -EINVAL;
 
     char name[PATH_MAX];
-    int mode;
+    mode_t mode;
     int uid;
     int gid;
 
@@ -108,7 +108,7 @@ static int do_sock_line(char* args) {
 }
 
 
-static int do_pipe(char name[PATH_MAX], int mode, int uid, int gid) {
+static int do_pipe(char name[PATH_MAX], mode_t mode, int uid, int gid) {
     return do_generic_file(name, mode, uid, gid, 'p', 0, 0);
 }
 
@@ -117,7 +117,7 @@ static int do_pipe_line(char* args) {
         return -EINVAL;
 
     char name[PATH_MAX];
-    int mode;
+    mode_t mode;
     int uid;
     int gid;
 
@@ -131,7 +131,7 @@ static int do_pipe_line(char* args) {
 }
 
 
-static int do_nod(char name[PATH_MAX], int mode, int uid, int gid,
+static int do_nod(char name[PATH_MAX], mode_t mode, int uid, int gid,
         char devtype, int maj, int min) {
     return do_generic_file(name, mode, uid, gid, devtype, maj, min);
 }
@@ -141,7 +141,7 @@ static int do_nod_line(char* args) {
         return -EINVAL;
 
     char name[PATH_MAX];
-    int mode;
+    mode_t mode;
     int uid;
     int gid;
     char devtype; /* 'b' or 'c' */
@@ -159,7 +159,7 @@ static int do_nod_line(char* args) {
 }
 
 
-static int do_slink(char name[PATH_MAX], char target[PATH_MAX], int mode,
+static int do_slink(char name[PATH_MAX], char target[PATH_MAX], mode_t mode,
         int uid, int gid) {
     int err = lkl_sys_symlink(target, get_sysname(name));
     if (err) {
@@ -176,7 +176,7 @@ static int do_slink_line(char* args) {
 
     char name[PATH_MAX];
     char target[PATH_MAX];
-    int mode;
+    mode_t mode;
     int uid;
     int gid;
 
@@ -207,7 +207,7 @@ static int do_dir_line(char* args) {
         return -EINVAL;
 
     char name[PATH_MAX] = {0};
-    int mode = 0;
+    mode_t mode = 0;
     int uid = 0;
     int gid = 0;
 
@@ -267,7 +267,7 @@ static int do_file_line(char* args) {
 
     char name[PATH_MAX] = {0};
     char source[PATH_MAX] = {0};
-    int mode = 0;
+    mode_t mode = 0;
     int uid = 0;
     int gid = 0;
 
