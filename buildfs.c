@@ -1,7 +1,17 @@
-/*
- * lkl stuff derived from lkl/cptofs.c
+/* buildfs.c - construct rootfs on a filesystem image */
+
+/* lkl stuff inspired by lkl/cptofs.c, written by Octavian Purdila <octavian.purdila@intel.com>
+ * and others.
  *
- * gen_init_cpio spec parsing lifted from usr/gen_init_cpio.c
+ * gen_init_cpio spec parsing lifted from usr/gen_init_cpio.c, by Jeff Garzik and others.
+ */
+
+/*
+ * TODO factor common parts of do_pipe, do_sock, do_nod
+ * TODO set uid/gid for pipe, sock, nod
+ * TODO support overwriting/updating existing entries? current version assumes
+ *      starting from a clean image
+ * TODO support hardlinks
  */
 
 #include <stdio.h>
@@ -37,6 +47,66 @@ struct handler {
 };
 
 /* Handlers */
+
+static int do_sock(char name[PATH_MAX], int mode, int uid, int gid) {
+    int err = lkl_sys_mknod(get_sysname(name), mode | LKL_S_IFSOCK, LKL_MKDEV(0, 0));
+    if (err) {
+        fprintf(stderr, "failed to create node %s: %s\n",
+                name, lkl_strerror(err));
+        return err;
+    }
+
+    return 0;
+}
+
+static int do_sock_line(char* args) {
+    if (!args)
+        return -EINVAL;
+
+    char name[PATH_MAX];
+    int mode;
+    int uid;
+    int gid;
+
+    int ret = sscanf(args, "%" str(PATH_MAX) "s %o %d %d", name, &mode, &uid, &gid);
+    if (ret != 4)
+        return -EINVAL;
+    if (ret < 0)
+        return ret;
+
+    return do_sock(name, mode, uid, gid);
+}
+
+
+static int do_pipe(char name[PATH_MAX], int mode, int uid, int gid) {
+    int err = lkl_sys_mknod(get_sysname(name), mode | LKL_S_IFIFO, LKL_MKDEV(0, 0));
+    if (err) {
+        fprintf(stderr, "failed to create node %s: %s\n",
+                name, lkl_strerror(err));
+        return err;
+    }
+
+    return 0;
+}
+
+static int do_pipe_line(char* args) {
+    if (!args)
+        return -EINVAL;
+
+    char name[PATH_MAX];
+    int mode;
+    int uid;
+    int gid;
+
+    int ret = sscanf(args, "%" str(PATH_MAX) "s %o %d %d", name, &mode, &uid, &gid);
+    if (ret != 4)
+        return -EINVAL;
+    if (ret < 0)
+        return ret;
+
+    return do_pipe(name, mode, uid, gid);
+}
+
 
 static int do_nod(char name[PATH_MAX], int mode, int uid, int gid,
         char devtype, int maj, int min) {
@@ -160,7 +230,6 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
     /* TODO: consider lkl_sys_fallocate destination first */
     /* TODO: consider lkl_sendfile */
 
-
     char cpbuf[4096]; // Copy buffer, ideally fits in L1 cache
     ssize_t nbytes = 0;
     do {
@@ -212,6 +281,12 @@ static struct handler handlers[] = {
     { .t = "file",
       .proc = do_file_line,
     },
+    { .t = "pipe",
+      .proc = do_pipe_line,
+    },
+    { .t = "sock",
+      .proc = do_sock_line,
+    },
 };
 
 /* Main */
@@ -226,7 +301,6 @@ int main(int argc, char* argv[argc]) {
 
     lkl_host_ops.print = 0;
 
-    /* Add disks */
     disk.fd = open("fs.img", O_RDWR);
     if (disk.fd < 0) {
         fprintf(stderr, "failed to open fs.img: %s\n", strerror(errno));
@@ -241,17 +315,14 @@ int main(int argc, char* argv[argc]) {
         goto out_close;
     }
 
-    /* Init kernel */
     lkl_start_kernel(&lkl_host_ops, "mem=20M");
 
-    /* Mount image */
     if (lkl_mount_dev(disk_id, part, "ext4", 0, 0, mnt, sizeof(mnt))) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
         ret = 1;
         goto out_close;
     }
 
-    /* Process specs */
 #define LINE_SIZE (2 * PATH_MAX + 58)
     FILE* spec_list = stdin; /* the spec source */
     char line[LINE_SIZE]; /* current spec line */
@@ -266,7 +337,6 @@ int main(int argc, char* argv[argc]) {
         if (*line == '#')
             continue;
 
-        /* Parse type */
         if (!(type = strtok(line, "\t"))) {
             ret = 1;
             break;
@@ -278,13 +348,11 @@ int main(int argc, char* argv[argc]) {
         if (slen == strlen(type))
             continue;
 
-        /* Parse args */
         if (!(args = strtok(0, "\n"))) {
             ret = 1;
             break;
         }
 
-        /* Dispatch on type */
         type_handler do_type = 0;
 
         for (size_t i = 0; i < array_count(handlers); ++i) {
@@ -302,8 +370,6 @@ int main(int argc, char* argv[argc]) {
 
         ret = do_type(args);
     }
-
-    /* Done */
 
 out_umount:
     (void)lkl_umount_dev(disk_id, part, 0, 1000);
