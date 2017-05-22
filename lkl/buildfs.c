@@ -341,7 +341,7 @@ int main(int argc, char* argv[argc]) {
 
     lkl_start_kernel(&lkl_host_ops, "mem=10M");
 
-    if (lkl_mount_dev(disk_id, part, "ext4", 0, 0, mnt, sizeof(mnt))) {
+    if ((ret = lkl_mount_dev(disk_id, part, "ext4", 0, 0, mnt, sizeof(mnt))) != 0) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
         ret = 1;
         goto out_close;
