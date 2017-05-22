@@ -6,14 +6,6 @@
  * gen_init_cpio spec parsing lifted from usr/gen_init_cpio.c, by Jeff Garzik and others.
  */
 
-/*
- * TODO factor common parts of do_pipe, do_sock, do_nod
- * TODO set uid/gid for pipe, sock, nod
- * TODO support overwriting/updating existing entries? current version assumes
- *      starting from a clean image
- * TODO support hardlinks
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -249,8 +241,8 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
         goto out;
     }
 
-    int outfd = lkl_sys_open(get_sysname(name), LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT,
-            mode);
+    int outfd = lkl_sys_open(get_sysname(name),
+            LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (outfd < 0) {
         fprintf(stderr, "failed to open outfile for writing: %s\n",
                 lkl_strerror(outfd));
@@ -323,8 +315,6 @@ int main(int argc, char* argv[argc]) {
     struct lkl_disk disk = {0}; /* host disk handle */
     int disk_id;
 
-    lkl_host_ops.print = 0;
-
     disk.fd = open("fs.img", O_RDWR);
     if (disk.fd < 0) {
         fprintf(stderr, "failed to open fs.img: %s\n", strerror(errno));
@@ -339,6 +329,7 @@ int main(int argc, char* argv[argc]) {
         goto out_close;
     }
 
+    lkl_host_ops.print = 0;
     lkl_start_kernel(&lkl_host_ops, "mem=10M");
 
     if ((ret = lkl_mount_dev(disk_id, part, "ext4", 0, 0, mnt, sizeof(mnt))) != 0) {
