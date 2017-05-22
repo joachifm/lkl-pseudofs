@@ -1,4 +1,4 @@
-with (import ./nixpkgs);
+with (import ../nixpkgs);
 with lib;
 
 runCommandCC "buildfs"
