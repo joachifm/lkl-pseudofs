@@ -310,7 +310,8 @@ static struct handler handlers[] = {
 int main(int argc, char* argv[argc]) {
     int ret; /* program return code */
 
-    int part = 0;
+    int part = 0; /* 0 = whole disk, n = partition n */
+    char fstype[] = "ext4";
 
     struct lkl_disk disk = {0}; /* host disk handle */
     int disk_id;
@@ -332,7 +333,7 @@ int main(int argc, char* argv[argc]) {
     lkl_host_ops.print = 0;
     lkl_start_kernel(&lkl_host_ops, "mem=10M");
 
-    if ((ret = lkl_mount_dev(disk_id, part, "ext4", 0, 0, mnt, sizeof(mnt))) != 0) {
+    if ((ret = lkl_mount_dev(disk_id, part, fstype, 0, 0, mnt, sizeof(mnt))) != 0) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
         ret = 1;
         goto out_close;
