@@ -327,7 +327,7 @@ int main(int argc, char* argv[argc]) {
     if (disk_id < 0) {
         fprintf(stderr, "failed to add disk: %s\n", lkl_strerror(disk_id));
         ret = 1;
-        goto out_close;
+        goto out;
     }
 
     lkl_host_ops.print = 0;
@@ -336,7 +336,7 @@ int main(int argc, char* argv[argc]) {
     if ((ret = lkl_mount_dev(disk_id, part, fstype, 0, 0, mnt, sizeof(mnt))) != 0) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
         ret = 1;
-        goto out_close;
+        goto out;
     }
 
 #define LINE_SIZE (2 * PATH_MAX + 58)
@@ -377,22 +377,16 @@ int main(int argc, char* argv[argc]) {
 
         if (!do_type) {
             fprintf(stderr, "unrecognized type: %s\n", type);
-            ret = 1;
-            goto out_umount;
+            continue;
         }
 
-        ret = do_type(args);
+        if (do_type(args)) /* we record failures but continue regardless */
+            ret = 1;
     }
 
-out_umount:
-    (void)lkl_umount_dev(disk_id, part, 0, 1000);
-
-out_close:
-    close(disk.fd);
-
-out_halt:
-    lkl_sys_halt();
-
 out:
+    (void)lkl_umount_dev(disk_id, part, 0, 1000);
+    lkl_sys_halt();
+    (void)close(disk.fd);
     return ret;
 }
