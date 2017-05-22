@@ -354,19 +354,16 @@ int main(int argc, char* argv[argc]) {
             continue;
 
         if (!(type = strtok(line, "\t"))) {
-            ret = 1;
-            break;
+            fprintf(stderr, "malformed line %ld: expected tab separator\n", lineno);
+            continue;
         }
 
-        if (*type == '\n')
-            continue;
-
-        if (slen == strlen(type))
+        if (*type == '\n' || slen == strlen(type)) /* blank line */
             continue;
 
         if (!(args = strtok(0, "\n"))) {
-            ret = 1;
-            break;
+            fprintf(stderr, "malformed line %ld: expected args\n", lineno);
+            continue;
         }
 
         type_handler do_type = 0;
