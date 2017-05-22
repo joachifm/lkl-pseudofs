@@ -147,6 +147,8 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
                 source, strerror(errno));
         err = -1;
     }
+    /* Advise kernel that we'll be reading the source sequentially, once */
+    posix_fadvise(sourcefd, 0, 0, POSIX_FADV_SEQUENTIAL | POSIX_FADV_WILLNEED | POSIX_FADV_NOREUSE);
 
     int destfd = lkl_sys_open(dest, LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (destfd < 0) {
@@ -155,10 +157,11 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
         err = -1;
     }
 
-    /* TODO: maybe lkl_sys_fallocate first? */
-    char cpbuf[4096]; /* Copy buffer, ideally fits in L1 cache */
-    /* Advise kernel that we'll be reading the entire source sequentially */
-    posix_fadvise(sourcefd, 0, 0, POSIX_FADV_SEQUENTIAL);
+    /* TODO: consider lkl_sys_fallocate destination first */
+    /* TODO: consider lkl_sendfile */
+
+
+    char cpbuf[4096]; // Copy buffer, ideally fits in L1 cache
     ssize_t nbytes = 0;
     do {
         nbytes = read(sourcefd, cpbuf, sizeof(cpbuf));
