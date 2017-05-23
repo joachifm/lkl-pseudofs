@@ -327,7 +327,7 @@ int main(int argc, char* argv[argc]) {
     }
 
     lkl_host_ops.print = 0;
-    lkl_start_kernel(&lkl_host_ops, "mem=10M");
+    lkl_start_kernel(&lkl_host_ops, "mem=6M");
 
     if ((ret = lkl_mount_dev(disk_id, part, fstype, 0, 0, mnt, sizeof(mnt))) != 0) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
