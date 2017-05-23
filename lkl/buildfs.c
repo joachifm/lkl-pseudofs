@@ -23,9 +23,6 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
-/* Recommended to get this at runtime via sysconf(_SC_PAGESIZE) */
-#define PAGE_SIZE 4096L
-
 static char mnt[PATH_MAX]; /* holds the disk image mount path */
 static char sysname[PATH_MAX]; /* holds path into mounted disk image */
 
@@ -249,7 +246,7 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
         goto out;
     }
 
-    char cpbuf[PAGE_SIZE];
+    char cpbuf[BUFSIZ];
     ssize_t ibs;
     while ((ibs = read(infd, cpbuf, sizeof(cpbuf))) > 0)
         lkl_sys_write(outfd, cpbuf, ibs);
