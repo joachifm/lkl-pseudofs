@@ -23,9 +23,8 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
-#ifndef PAGE_SIZE
+/* Recommended to get this at runtime via sysconf(_SC_PAGESIZE) */
 #define PAGE_SIZE 4096L
-#endif
 
 static char mnt[PATH_MAX]; /* holds the disk image mount path */
 static char sysname[PATH_MAX]; /* holds path into mounted disk image */
