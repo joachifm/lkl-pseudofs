@@ -188,10 +188,18 @@ static int do_slink_line(char* args) {
 
 
 static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
-    int err = lkl_sys_mkdir(get_sysname(name), mode);
+    char const* sysname = get_sysname(name);
+    int err = lkl_sys_mkdir(sysname, mode);
     if (err) { /* err != -LKL_EEXIST to ignore already existing dir */
         fprintf(stderr, "unable to create dir '%s': %s\n", name,
                 lkl_strerror(err));
+        return err;
+    }
+
+    /* NB: chown derefs, lchown does not */
+    err = lkl_sys_chown(sysname, uid, gid);
+    if (err < 0) {
+        fprintf(stderr, "unable to set ownership: %s\n", lkl_strerror(err));
         return err;
     }
 
