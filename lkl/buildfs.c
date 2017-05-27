@@ -160,11 +160,22 @@ static int do_nod_line(char* args) {
 
 static int do_slink(char name[PATH_MAX], char target[PATH_MAX], mode_t mode,
         uid_t uid, gid_t gid) {
-    int err = lkl_sys_symlink(target, get_sysname(name));
-    if (err) {
+    int err = 0;
+    char const* const sysname = get_sysname(name);
+
+    if ((err = lkl_sys_symlink(target, sysname))) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
                 name, target, lkl_strerror(err));
+        goto out;
     }
+
+    if ((err = lkl_sys_lchown(sysname, uid, gid)) < 0) {
+        fprintf(stderr, "unable to set ownership: %s\n",
+                lkl_strerror(err));
+        goto out;
+    }
+
+out:
     return err;
 }
 
