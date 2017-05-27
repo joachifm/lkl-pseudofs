@@ -43,9 +43,9 @@ struct handler {
 static int do_generic_file(char name[PATH_MAX], mode_t mode, uid_t uid, gid_t gid,
         char type, int maj, int min) {
 
-    char const* const pathname = get_sysname(name);
+    char const* const sysname = get_sysname(name);
     int err = 0;
-    dev_t dev = LKL_MKDEV(maj, min);
+    dev_t dev = 0;
     int typeflag = LKL_S_IFREG;
 
     switch (type) {
@@ -66,13 +66,16 @@ static int do_generic_file(char name[PATH_MAX], mode_t mode, uid_t uid, gid_t gi
             break;
     }
 
-    err = lkl_sys_mknod(pathname, mode | typeflag, dev);
+    if (typeflag & (LKL_S_IFCHR | LKL_S_IFBLK))
+        dev = LKL_MKDEV(maj, min);
+
+    err = lkl_sys_mknod(sysname, mode | typeflag, dev);
     if (err) {
         fprintf(stderr, "failed to create node %s: %s\n", name, lkl_strerror(err));
         return err;
     }
 
-    err = lkl_sys_chown(pathname, uid, gid);
+    err = lkl_sys_chown(sysname, uid, gid);
     if (err) {
         fprintf(stderr, "failed to set owner %s: %s\n", name, lkl_strerror(err));
         return err;
@@ -161,9 +164,8 @@ static int do_slink(char name[PATH_MAX], char target[PATH_MAX], mode_t mode,
     if (err) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
                 name, target, lkl_strerror(err));
-        return err;
     }
-    return 0;
+    return err;
 }
 
 static int do_slink_line(char* args) {
