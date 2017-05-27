@@ -40,7 +40,7 @@ struct handler {
 
 /* Handlers */
 
-static int do_generic_file(char name[PATH_MAX], int mode, int uid, int gid,
+static int do_generic_file(char name[PATH_MAX], mode_t mode, uid_t uid, gid_t gid,
         char type, int maj, int min) {
 
     char const* const pathname = get_sysname(name);
@@ -91,8 +91,8 @@ static int do_sock_line(char* args) {
 
     char name[PATH_MAX];
     mode_t mode;
-    int uid;
-    int gid;
+    uid_t uid;
+    gid_t gid;
 
     int ret = sscanf(args, "%" str(PATH_MAX) "s %o %d %d", name, &mode, &uid, &gid);
     if (ret != 4)
@@ -156,7 +156,7 @@ static int do_nod_line(char* args) {
 
 
 static int do_slink(char name[PATH_MAX], char target[PATH_MAX], mode_t mode,
-        int uid, int gid) {
+        uid_t uid, gid_t gid) {
     int err = lkl_sys_symlink(target, get_sysname(name));
     if (err) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
@@ -173,8 +173,8 @@ static int do_slink_line(char* args) {
     char name[PATH_MAX];
     char target[PATH_MAX];
     mode_t mode;
-    int uid;
-    int gid;
+    uid_t uid;
+    gid_t gid;
 
     int ret = sscanf(args, "%" str(PATH_MAX) "s %" str(PATH_MAX) "s %o %d %d",
             name, target, &mode, &uid, &gid);
@@ -187,7 +187,7 @@ static int do_slink_line(char* args) {
 }
 
 
-static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
+static int do_dir(char name[PATH_MAX], mode_t mode, uid_t uid, gid_t gid) {
     char const* const sysname = get_sysname(name);
     int err = lkl_sys_mkdir(sysname, mode);
     if (err) { /* err != -LKL_EEXIST to ignore already existing dir */
@@ -212,8 +212,8 @@ static int do_dir_line(char* args) {
 
     char name[PATH_MAX] = {0};
     mode_t mode = 0;
-    int uid = 0;
-    int gid = 0;
+    uid_t uid = 0;
+    gid_t gid = 0;
 
     int ret = sscanf(args, "%" str(PATH_MAX) "s %o %d %d", name, &mode, &uid, &gid);
     if (ret != 4)
@@ -225,8 +225,8 @@ static int do_dir_line(char* args) {
 }
 
 
-static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
-        int uid, int gid) {
+static int do_file(char name[PATH_MAX], char source[PATH_MAX], mode_t mode,
+        uid_t uid, gid_t gid) {
     int err = 0;
 
     char const* const sysname = get_sysname(name);
@@ -279,8 +279,8 @@ static int do_file_line(char* args) {
     char name[PATH_MAX] = {0};
     char source[PATH_MAX] = {0};
     mode_t mode = 0;
-    int uid = 0;
-    int gid = 0;
+    uid_t uid = 0;
+    gid_t gid = 0;
 
     int ret = sscanf(args, "%" str(PATH_MAX) "s %" str(PATH_MAX) "s %o %d %d",
             name, source, &mode, &uid, &gid);
