@@ -188,7 +188,7 @@ static int do_slink_line(char* args) {
 
 
 static int do_dir(char name[PATH_MAX], int mode, int uid, int gid) {
-    char const* sysname = get_sysname(name);
+    char const* const sysname = get_sysname(name);
     int err = lkl_sys_mkdir(sysname, mode);
     if (err) { /* err != -LKL_EEXIST to ignore already existing dir */
         fprintf(stderr, "unable to create dir '%s': %s\n", name,
