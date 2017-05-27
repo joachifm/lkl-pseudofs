@@ -221,7 +221,7 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
         int uid, int gid) {
     int err = 0;
 
-    char const* const outfile = get_sysname(name);
+    char const* const sysname = get_sysname(name);
 
     int infd = open(source, O_RDONLY, 0);
     if (infd < 0) {
@@ -237,7 +237,7 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
         goto out;
     }
 
-    int outfd = lkl_sys_open(get_sysname(name),
+    int outfd = lkl_sys_open(sysname,
             LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (outfd < 0) {
         fprintf(stderr, "failed to open outfile for writing: %s\n",
