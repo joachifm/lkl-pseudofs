@@ -246,6 +246,13 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], int mode,
         goto out;
     }
 
+    err = lkl_sys_chown(sysname, uid, gid);
+    if (err < 0) {
+        fprintf(stderr, "failed to set ownership: %s\n",
+                lkl_strerror(err));
+        goto out;
+    }
+
     char cpbuf[BUFSIZ];
     ssize_t ibs;
     while ((ibs = read(infd, cpbuf, sizeof(cpbuf))) > 0)
