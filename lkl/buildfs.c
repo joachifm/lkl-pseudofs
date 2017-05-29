@@ -252,9 +252,10 @@ static int do_file(char name[PATH_MAX], char source[PATH_MAX], mode_t mode,
         goto out;
     }
 
-    if (posix_fadvise(infd, 0, 0, POSIX_FADV_SEQUENTIAL) != 0) {
-        fprintf(stderr, "failed to fadvise infile: %s\n", strerror(errno));
-        err = -errno;
+    err = posix_fadvise(infd, 0, 0, POSIX_FADV_SEQUENTIAL);
+    if (err != 0) {
+        fprintf(stderr, "failed to fadvise infile: %s\n", strerror(err));
+        err = -err;
         goto out;
     }
 
