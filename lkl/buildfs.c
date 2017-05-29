@@ -89,9 +89,6 @@ static int do_sock(char name[PATH_MAX], int mode, int uid, int gid) {
 }
 
 static int do_sock_line(char* args) {
-    if (!args)
-        return -EINVAL;
-
     char name[PATH_MAX];
     mode_t mode;
     uid_t uid;
@@ -112,9 +109,6 @@ static int do_pipe(char name[PATH_MAX], mode_t mode, int uid, int gid) {
 }
 
 static int do_pipe_line(char* args) {
-    if (!args)
-        return -EINVAL;
-
     char name[PATH_MAX];
     mode_t mode;
     int uid;
@@ -136,9 +130,6 @@ static int do_nod(char name[PATH_MAX], mode_t mode, int uid, int gid,
 }
 
 static int do_nod_line(char* args) {
-    if (!args)
-        return -EINVAL;
-
     char name[PATH_MAX];
     mode_t mode;
     int uid;
@@ -180,9 +171,6 @@ out:
 }
 
 static int do_slink_line(char* args) {
-    if (!args)
-        return -EINVAL;
-
     char name[PATH_MAX];
     char target[PATH_MAX];
     mode_t mode;
@@ -220,9 +208,6 @@ static int do_dir(char name[PATH_MAX], mode_t mode, uid_t uid, gid_t gid) {
 }
 
 static int do_dir_line(char* args) {
-    if (!args)
-        return -EINVAL;
-
     char name[PATH_MAX] = {0};
     mode_t mode = 0;
     uid_t uid = 0;
@@ -287,9 +272,6 @@ out:
 }
 
 static int do_file_line(char* args) {
-    if (!args)
-        return -EINVAL;
-
     char name[PATH_MAX] = {0};
     char source[PATH_MAX] = {0};
     mode_t mode = 0;
