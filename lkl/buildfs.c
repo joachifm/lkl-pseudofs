@@ -26,21 +26,23 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
-#define STREQ(S1, S2) (strcmp(S1, S2) == 0)
-
 #define FMT_PATH "%" str(PATH_MAX) "s"
 
 #define FSTYPE_MAX 64
 
 static char const progname[] = "buildfs";
 
+static inline int streq(char const* s1, char const* s2) {
+    return strcmp(s1, s2) == 0;
+}
+
 static int is_valid_fstype(char const* s) {
     return s &&
-        (STREQ(s, "ext2") ||
-         STREQ(s, "ext3") ||
-         STREQ(s, "ext4") ||
-         STREQ(s, "btrfs") ||
-         STREQ(s, "vfat"));
+        (streq(s, "ext2") ||
+         streq(s, "ext3") ||
+         streq(s, "ext4") ||
+         streq(s, "btrfs") ||
+         streq(s, "vfat"));
 }
 
 static int xsscanf(char const* fmt, size_t nparam, char const* args, ...) {
@@ -335,35 +337,35 @@ int main(int argc, char* argv[argc]) {
         uid_t uid;
         gid_t gid;
 
-        if      (STREQ(type, "file")) {
+        if      (streq(type, "file")) {
             char infile[PATH_MAX];
             char const fmt[] = FMT_PATH " " FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 5, args, name, infile, &mode, &uid, &gid)))
                 err = do_file(name, infile, mode, uid, gid);
         }
-        else if (STREQ(type, "dir")) {
+        else if (streq(type, "dir")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 4, args, name, &mode, &uid, &gid)))
                 err = do_dir(name, mode, uid, gid);
         }
-        else if (STREQ(type, "slink")) {
+        else if (streq(type, "slink")) {
             char target[PATH_MAX];
             char const fmt[] = FMT_PATH " " FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 5, args, name, target, &mode, &uid, &gid)))
                 err = do_slink(name, target, mode, uid, gid);
         }
-        else if (STREQ(type, "nod")) {
+        else if (streq(type, "nod")) {
             char devtype; int maj; int min;
             char const fmt[] = FMT_PATH " %o %d %d %c %d %d";
             if (!(err = xsscanf(fmt, 7, args, name, &mode, &uid, &gid, &devtype, &maj, &min)))
                 err = do_nod(name, mode, uid, gid, devtype, maj, min);
         }
-        else if (STREQ(type, "pipe")) {
+        else if (streq(type, "pipe")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 4, args, name, &mode, &uid, &gid)))
                 err = do_pipe(name, mode, uid, gid);
         }
-        else if (STREQ(type, "sock")) {
+        else if (streq(type, "sock")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 4, args, name, &mode, &uid, &gid)))
                 err = do_sock(name, mode, uid, gid);
