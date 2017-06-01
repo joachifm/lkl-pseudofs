@@ -10,4 +10,4 @@ echo "Building ..." >&2
 prog=$(nix-build ../../lkl --no-out-link)
 
 echo "Running test ..." >&2
-$prog < ./fs.spec
+$prog -t ext4 -P 0 -i fs.img < ./fs.spec

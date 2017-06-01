@@ -6,12 +6,14 @@
  * gen_init_cpio spec parsing lifted from usr/gen_init_cpio.c, by Jeff Garzik and others.
  */
 
+
+#include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
-#include <errno.h>
 
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -23,9 +25,22 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
+#define STREQ(S1, S2) (strcmp(S1, S2) == 0)
+
 #define FMT_PATH "%" str(PATH_MAX) "s"
 
-#define STREQ(S1, S2) (strcmp(S1, S2) == 0)
+#define FSTYPE_MAX 64
+
+static char const progname[] = "buildfs";
+
+static int is_valid_fstype(char const* s) {
+    return s &&
+        (STREQ(s, "ext2") ||
+         STREQ(s, "ext3") ||
+         STREQ(s, "ext4") ||
+         STREQ(s, "btrfs") ||
+         STREQ(s, "vfat"));
+}
 
 static int xsscanf(char const* fmt, size_t nparam, char const* args, ...) {
     va_list ap;
@@ -183,15 +198,79 @@ static int do_pipe(char const name[PATH_MAX], mode_t mode, uid_t uid, gid_t gid)
 int main(int argc, char* argv[argc]) {
     int ret; /* program return code */
 
-    int part = 0; /* 0 = whole disk, n = partition n */
-    char fstype[] = "ext4";
+    int part = 0;
+    char fstype[FSTYPE_MAX] = {0};
+    char imgpath[PATH_MAX] = {0};
+
+    /*
+     * Parse command-line
+     */
+
+    char const opts[] = "hP:t:i:";
+    int optchar;
+    while ((optchar = getopt(argc, argv, opts)) != -1) {
+        switch (optchar) {
+            case 't':
+                strncpy(fstype, optarg, sizeof(fstype));
+                break;
+            case 'i':
+                strncpy(imgpath, optarg, sizeof(imgpath));
+                break;
+            case 'P':
+                part = atoi(optarg);
+                break;
+            case 'h':
+                printf("usage: %s [-t FSTYPE, -i FILE, -P NUM]\n", progname);
+                return EXIT_SUCCESS;
+            case '?':
+                break;
+            default:
+                printf("?? getopt returned %o ??\n", optchar);
+        }
+    }
+
+    /*
+     * Validate inputs
+     */
+
+    if (!fstype || strlen(fstype) == 0) {
+        fprintf(stderr, "please specify a fs type\n");
+        return 1;
+    }
+    if (!is_valid_fstype(fstype)) {
+        fprintf(stderr, "invalid fstype: %s\n", fstype);
+        return 1;
+    }
+
+    if (part < 0 || part > 128) {
+        fprintf(stderr, "partition must be in [0,128]!\n");
+        return 1;
+    }
+
+    if (!imgpath || strlen(imgpath) == 0) {
+        fprintf(stderr, "please specify a disk image path\n");
+        return 1;
+    }
+    if (access(imgpath, O_RDWR) < 0) {
+        fprintf(stderr, "unable to read/write image path '%s': %s\n",
+                imgpath, strerror(errno));
+        return 1;
+    }
+
+    if (part == 0) {
+        fprintf(stderr, "NOTICE: operating on entire disk\n");
+    }
+
+    /*
+     * Process
+     */
 
     struct lkl_disk disk = {0}; /* host disk handle */
     int disk_id;
 
-    disk.fd = open("fs.img", O_RDWR);
+    disk.fd = open(imgpath, O_RDWR);
     if (disk.fd < 0) {
-        fprintf(stderr, "failed to open fs.img: %s\n", strerror(errno));
+        fprintf(stderr, "failed to open %s for writing: %s\n", imgpath, strerror(errno));
         ret = EXIT_FAILURE;
         goto out;
     }
