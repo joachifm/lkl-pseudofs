@@ -35,6 +35,10 @@ static int xsscanf(char const* fmt, size_t nparam, char const* args, ...) {
     return res != nparam;
 }
 
+static const char* asrelpath(const char* pathname) {
+    return (*pathname == '/') ? ++pathname : pathname;
+}
+
 static char mnt[PATH_MAX]; /* holds the fs image mount path */
 static char thesysname[PATH_MAX]; /* holds path into mounted fs image */
 static char const* get_sysname(char const name[PATH_MAX]) {
@@ -52,9 +56,6 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         mode_t mode, uid_t uid, gid_t gid) {
     int err = 0;
 
-    if (*name == '/')
-        ++name;
-
     int infd = open(infile, O_RDONLY, 0);
     if (infd < 0) {
         fprintf(stderr, "failed to open infile for reading: %s\n",
@@ -70,7 +71,7 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         goto out;
     }
 
-    int outfd = lkl_sys_openat(mntfd, name, LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
+    int outfd = lkl_sys_openat(mntfd, asrelpath(name), LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (outfd < 0) {
         fprintf(stderr, "failed to open outfile for writing: %s\n",
                 lkl_strerror(outfd));
