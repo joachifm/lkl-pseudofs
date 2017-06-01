@@ -142,7 +142,6 @@ static int do_dir(char const name[PATH_MAX], mode_t mode, uid_t uid,
 static int do_nod(char const name[PATH_MAX], mode_t mode,
         uid_t uid, gid_t gid, char type, int maj, int min) {
     int err = 0;
-    char const* const sysname = get_sysname(name);
 
     int typeflag = LKL_S_IFREG;
     switch (type) {
@@ -163,13 +162,13 @@ static int do_nod(char const name[PATH_MAX], mode_t mode,
             break;
     }
 
-    err = lkl_sys_mknod(sysname, mode | typeflag, LKL_MKDEV(maj, min));
+    err = lkl_sys_mknodat(mntfd, asrelpath(name), mode | typeflag, LKL_MKDEV(maj, min));
     if (err) {
         fprintf(stderr, "failed to create node %s: %s\n", name, lkl_strerror(err));
         return err;
     }
 
-    err = lkl_sys_chown(sysname, uid, gid);
+    err = lkl_sys_fchownat(mntfd, asrelpath(name), uid, gid, 0);
     if (err) {
         fprintf(stderr, "failed to set owner %s: %s\n", name, lkl_strerror(err));
         return err;
