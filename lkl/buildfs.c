@@ -57,7 +57,7 @@ static const char* asrelpath(const char* pathname) {
 
 /* dirfd to internal fs image mount path; used to openat files within the
  * image. */
-static int mntfd = -EBADF;
+static int mntdirfd = -EBADF;
 
 /* Handlers */
 
@@ -80,7 +80,7 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         goto out;
     }
 
-    int outfd = lkl_sys_openat(mntfd, asrelpath(name), LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
+    int outfd = lkl_sys_openat(mntdirfd, asrelpath(name), LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (outfd < 0) {
         fprintf(stderr, "failed to open outfile for writing: %s\n",
                 lkl_strerror(outfd));
@@ -110,14 +110,14 @@ static int do_slink(char const name[PATH_MAX],
         char const target[PATH_MAX], mode_t mode, uid_t uid, gid_t gid) {
     int err = 0;
 
-    err = lkl_sys_symlinkat(target, mntfd, asrelpath(name));
+    err = lkl_sys_symlinkat(target, mntdirfd, asrelpath(name));
     if (err) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
                 name, target, lkl_strerror(err));
         goto out;
     }
 
-    err = lkl_sys_fchownat(mntfd, asrelpath(name), uid, gid, AT_SYMLINK_NOFOLLOW);
+    err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, AT_SYMLINK_NOFOLLOW);
     if (err) {
         fprintf(stderr, "unable to set ownership: %s\n",
                 lkl_strerror(err));
@@ -132,14 +132,14 @@ static int do_dir(char const name[PATH_MAX], mode_t mode, uid_t uid,
         gid_t gid) {
     int err = 0;
 
-    err = lkl_sys_mkdirat(mntfd, asrelpath(name), mode);
+    err = lkl_sys_mkdirat(mntdirfd, asrelpath(name), mode);
     if (err) { /* err != -LKL_EEXIST to ignore already existing dir */
         fprintf(stderr, "unable to create dir '%s': %s\n", name,
                 lkl_strerror(err));
         return err;
     }
 
-    err = lkl_sys_fchownat(mntfd, asrelpath(name), uid, gid, 0);
+    err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, 0);
     if (err < 0) {
         fprintf(stderr, "unable to set ownership: %s\n", lkl_strerror(err));
         return err;
@@ -171,13 +171,13 @@ static int do_nod(char const name[PATH_MAX], mode_t mode,
             break;
     }
 
-    err = lkl_sys_mknodat(mntfd, asrelpath(name), mode | typeflag, LKL_MKDEV(maj, min));
+    err = lkl_sys_mknodat(mntdirfd, asrelpath(name), mode | typeflag, LKL_MKDEV(maj, min));
     if (err) {
         fprintf(stderr, "failed to create node %s: %s\n", name, lkl_strerror(err));
         return err;
     }
 
-    err = lkl_sys_fchownat(mntfd, asrelpath(name), uid, gid, 0);
+    err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, 0);
     if (err) {
         fprintf(stderr, "failed to set owner %s: %s\n", name, lkl_strerror(err));
         return err;
@@ -294,9 +294,9 @@ int main(int argc, char* argv[argc]) {
         goto out;
     }
 
-    mntfd = lkl_sys_open(mnt, LKL_O_PATH | LKL_O_DIRECTORY, 0);
-    if (mntfd < 0) {
-        fprintf(stderr, "failed to open mntfd: %s\n", lkl_strerror(mntfd));
+    mntdirfd = lkl_sys_open(mnt, LKL_O_PATH | LKL_O_DIRECTORY, 0);
+    if (mntdirfd < 0) {
+        fprintf(stderr, "failed to open mntdirfd: %s\n", lkl_strerror(mntdirfd));
         ret = EXIT_FAILURE;
         goto out;
     }
@@ -375,7 +375,7 @@ int main(int argc, char* argv[argc]) {
     }
 
 out:
-    lkl_sys_close(mntfd);
+    lkl_sys_close(mntdirfd);
     lkl_umount_dev(disk_id, part, 0, 1000);
     lkl_sys_halt();
     close(disk.fd);
