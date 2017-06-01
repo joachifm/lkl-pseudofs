@@ -39,13 +39,6 @@ static const char* asrelpath(const char* pathname) {
     return (*pathname == '/') ? ++pathname : pathname;
 }
 
-static char mnt[PATH_MAX]; /* holds the fs image mount path */
-static char thesysname[PATH_MAX]; /* holds path into mounted fs image */
-static char const* get_sysname(char const name[PATH_MAX]) {
-    snprintf(thesysname, PATH_MAX, "%s/%s", mnt, name);
-    return thesysname;
-}
-
 /* dirfd to internal fs image mount path; used to openat files within the
  * image. */
 static int mntfd = -EBADF;
@@ -213,6 +206,7 @@ int main(int argc, char* argv[argc]) {
     lkl_host_ops.print = 0;
     lkl_start_kernel(&lkl_host_ops, "mem=6M");
 
+    char mnt[PATH_MAX] = {0};
     ret = lkl_mount_dev(disk_id, part, fstype, 0, 0, mnt, sizeof(mnt));
     if (ret) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
