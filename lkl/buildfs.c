@@ -55,8 +55,10 @@ static const char* asrelpath(const char* pathname) {
     return (*pathname == '/') ? ++pathname : pathname;
 }
 
-/* dirfd to internal fs image mount path; used to openat files within the
- * image. */
+/* dirfd to internal fs image mount path.  Used to manipulate
+ * paths within the mounted file system image via *_at syscalls.
+ * This is to avoid having to recover the "real" path by prepending
+ * the internal mnt path. */
 static int mntdirfd = -EBADF;
 
 /* Handlers */
