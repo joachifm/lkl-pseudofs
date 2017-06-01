@@ -100,16 +100,15 @@ out:
 static int do_slink(char const name[PATH_MAX],
         char const target[PATH_MAX], mode_t mode, uid_t uid, gid_t gid) {
     int err = 0;
-    char const* const sysname = get_sysname(name);
 
-    err = lkl_sys_symlink(target, sysname);
+    err = lkl_sys_symlinkat(target, mntfd, asrelpath(name));
     if (err) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
                 name, target, lkl_strerror(err));
         goto out;
     }
 
-    err = lkl_sys_lchown(sysname, uid, gid);
+    err = lkl_sys_fchownat(mntfd, asrelpath(name), uid, gid, AT_SYMLINK_NOFOLLOW);
     if (err) {
         fprintf(stderr, "unable to set ownership: %s\n",
                 lkl_strerror(err));
