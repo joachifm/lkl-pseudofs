@@ -1,4 +1,6 @@
 #! /bin/sh
+set -o errexit -o nounset
+
 cd "$(dirname "$0")"
 
 echo "Creating empty image ..." >&2
