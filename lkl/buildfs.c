@@ -7,6 +7,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
@@ -41,13 +42,18 @@ static char const* get_sysname(char const name[PATH_MAX]) {
     return thesysname;
 }
 
+/* dirfd to internal fs image mount path; used to openat files within the
+ * image. */
+static int mntfd = -EBADF;
+
 /* Handlers */
 
 static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         mode_t mode, uid_t uid, gid_t gid) {
     int err = 0;
 
-    char const* const sysname = get_sysname(name);
+    if (*name == '/')
+        ++name;
 
     int infd = open(infile, O_RDONLY, 0);
     if (infd < 0) {
@@ -64,8 +70,7 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         goto out;
     }
 
-    int outfd = lkl_sys_open(sysname,
-            LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
+    int outfd = lkl_sys_openat(mntfd, name, LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (outfd < 0) {
         fprintf(stderr, "failed to open outfile for writing: %s\n",
                 lkl_strerror(outfd));
@@ -73,7 +78,7 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         goto out;
     }
 
-    err = lkl_sys_chown(sysname, uid, gid);
+    err = lkl_sys_fchown(outfd, uid, gid);
     if (err < 0) {
         fprintf(stderr, "failed to set ownership: %s\n",
                 lkl_strerror(err));
@@ -81,13 +86,13 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
     }
 
     char cpbuf[BUFSIZ];
-    ssize_t ibs;
-    while ((ibs = read(infd, cpbuf, sizeof(cpbuf))) > 0)
-        lkl_sys_write(outfd, cpbuf, ibs);
+    ssize_t ibytes;
+    while ((ibytes = read(infd, cpbuf, sizeof(cpbuf))) > 0)
+        lkl_sys_write(outfd, cpbuf, ibytes);
 
 out:
-    close(infd);
     lkl_sys_close(outfd);
+    close(infd);
     return err;
 }
 
@@ -196,14 +201,14 @@ int main(int argc, char* argv[argc]) {
     disk.fd = open("fs.img", O_RDWR);
     if (disk.fd < 0) {
         fprintf(stderr, "failed to open fs.img: %s\n", strerror(errno));
-        ret = 1;
+        ret = EXIT_FAILURE;
         goto out;
     }
 
     disk_id = lkl_disk_add(&disk);
     if (disk_id < 0) {
         fprintf(stderr, "failed to add disk: %s\n", lkl_strerror(disk_id));
-        ret = 1;
+        ret = EXIT_FAILURE;
         goto out;
     }
 
@@ -213,7 +218,14 @@ int main(int argc, char* argv[argc]) {
     ret = lkl_mount_dev(disk_id, part, fstype, 0, 0, mnt, sizeof(mnt));
     if (ret) {
         fprintf(stderr, "failed to mount disk: %s\n", lkl_strerror(ret));
-        ret = 1;
+        ret = EXIT_FAILURE;
+        goto out;
+    }
+
+    mntfd = lkl_sys_open(mnt, LKL_O_PATH | LKL_O_DIRECTORY, 0);
+    if (mntfd < 0) {
+        fprintf(stderr, "failed to open mntfd: %s\n", lkl_strerror(mntfd));
+        ret = EXIT_FAILURE;
         goto out;
     }
 
@@ -291,6 +303,7 @@ int main(int argc, char* argv[argc]) {
     }
 
 out:
+    lkl_sys_close(mntfd);
     lkl_umount_dev(disk_id, part, 0, 1000);
     lkl_sys_halt();
     close(disk.fd);
