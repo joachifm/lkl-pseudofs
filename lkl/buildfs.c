@@ -341,6 +341,7 @@ int main(int argc, char* argv[argc]) {
         }
 
         int err = 0;
+
         char name[PATH_MAX];
         mode_t mode;
         uid_t uid;
@@ -380,11 +381,9 @@ int main(int argc, char* argv[argc]) {
                 err = do_sock(name, mode, uid, gid);
         }
         else {
+            fprintf(stderr, "%s: unrecognized type: %s\n", progname, type);
             err = 1;
         }
-
-        if (err)
-            fprintf(stderr, "%s: %ld: some error\n", progname, lineno);
     }
 
 out:
