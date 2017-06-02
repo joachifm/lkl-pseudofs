@@ -279,7 +279,7 @@ int main(int argc, char* argv[argc]) {
      */
 
     struct lkl_disk disk = {0}; /* host disk handle */
-    int disk_id;
+    int disk_id = -1;
 
     disk.fd = open(imgpath, O_RDWR);
     if (disk.fd < 0) {
