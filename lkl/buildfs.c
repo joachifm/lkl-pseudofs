@@ -274,10 +274,6 @@ int main(int argc, char* argv[argc]) {
         return 1;
     }
 
-    if (part == 0) {
-        fprintf(stderr, "NOTICE: operating on entire disk\n");
-    }
-
     /*
      * Process
      */
