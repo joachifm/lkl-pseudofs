@@ -1,12 +1,10 @@
 /* buildfs.c - construct rootfs on a filesystem image */
 
-/* lkl stuff inspired by lkl/cptofs.c, written
- * by Octavian Purdila and others.
+/* lkl stuff inspired by lkl/cptofs.c, written by Octavian Purdila and others.
  *
- * gen_init_cpio spec parsing initially lifted from usr/gen_init_cpio.c,
- * by Jeff Garzik and others.
+ * gen_init_cpio spec parsing initially lifted from usr/gen_init_cpio.c, by
+ * Jeff Garzik and others.
  */
-
 
 #include <errno.h>
 #include <stdarg.h>
