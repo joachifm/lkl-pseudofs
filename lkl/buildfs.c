@@ -327,7 +327,7 @@ int main(int argc, char* argv[argc]) {
             continue;
 
         if (!(type = strtok(line, " \t"))) {
-            fprintf(stderr, "%ld: expected tab separator\n", lineno);
+            fprintf(stderr, "%s: %ld: expected separator\n", progname, lineno);
             continue;
         }
 
@@ -335,7 +335,7 @@ int main(int argc, char* argv[argc]) {
             continue;
 
         if (!(args = strtok(0, "\n"))) {
-            fprintf(stderr, "%ld: expected args\n", lineno);
+            fprintf(stderr, "%s: %ld: expected args\n", progname, lineno);
             continue;
         }
 
@@ -383,7 +383,7 @@ int main(int argc, char* argv[argc]) {
         }
 
         if (err)
-            fprintf(stderr, "%ld: some error\n", lineno);
+            fprintf(stderr, "%s: %ld: some error\n", progname, lineno);
     }
 
 out:
