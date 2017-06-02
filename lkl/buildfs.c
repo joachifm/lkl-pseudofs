@@ -61,6 +61,8 @@ static const char* asrelpath(const char* pathname) {
  * the internal mnt path. */
 static int mntdirfd = -EBADF;
 
+static int verbosity;
+
 /* Handlers */
 
 static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
@@ -204,7 +206,6 @@ int main(int argc, char* argv[argc]) {
     int part = 0;
     char fstype[FSTYPE_MAX] = {0};
     char imgpath[PATH_MAX] = {0};
-    int verbosity = 0;
 
     /*
      * Parse command-line
