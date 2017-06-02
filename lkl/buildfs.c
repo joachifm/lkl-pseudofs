@@ -206,15 +206,19 @@ int main(int argc, char* argv[argc]) {
     int part = 0;
     char fstype[FSTYPE_MAX] = {0};
     char imgpath[PATH_MAX] = {0};
+    int verbosity = 0;
 
     /*
      * Parse command-line
      */
 
-    char const opts[] = "hP:t:i:";
+    char const opts[] = "hvP:t:i:";
     int optchar;
     while ((optchar = getopt(argc, argv, opts)) != -1) {
         switch (optchar) {
+            case 'v':
+                ++verbosity;
+                break;
             case 't':
                 strncpy(fstype, optarg, sizeof(fstype));
                 break;
@@ -225,7 +229,14 @@ int main(int argc, char* argv[argc]) {
                 part = atoi(optarg);
                 break;
             case 'h':
-                printf("usage: %s [-t FSTYPE, -i FILE, -P NUM]\n", progname);
+                printf("usage: %s OPTION...\n"
+                       "\n"
+                       "Options:\n"
+                       "\t-v"
+                       "\t-t FSTYPE\n"
+                       "\t-i FILE\n"
+                       "\t-P NUM\n",
+                       progname);
                 return EXIT_SUCCESS;
             case '?':
                 break;
@@ -287,7 +298,9 @@ int main(int argc, char* argv[argc]) {
         goto out;
     }
 
-    lkl_host_ops.print = 0;
+    if (verbosity < 3)
+        lkl_host_ops.print = 0;
+
     lkl_start_kernel(&lkl_host_ops, "mem=6M");
 
     char mnt[PATH_MAX] = {0};
