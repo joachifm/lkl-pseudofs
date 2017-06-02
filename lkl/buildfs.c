@@ -241,7 +241,8 @@ int main(int argc, char* argv[argc]) {
             case '?':
                 break;
             default:
-                printf("?? getopt returned %o ??\n", optchar);
+                fprintf(stderr, "%s: getopt returned %o ??\n", progname, optchar);
+                return EXIT_FAILURE;
         }
     }
 
