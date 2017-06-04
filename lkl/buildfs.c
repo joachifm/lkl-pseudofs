@@ -21,6 +21,8 @@
 #include <lkl.h>
 #include <lkl_host.h>
 
+#define array_count(X) (sizeof(X)/sizeof((X)[1]))
+
 #define xstr(s) #s
 #define str(s) xstr(s)
 
@@ -30,17 +32,23 @@
 
 static char const progname[] = "buildfs";
 
+static char* const filesystems[] = {
+    "ext2",
+    "ext3",
+    "ext4",
+    "vfat",
+    "btrfs",
+};
+
 static inline int streq(char const* s1, char const* s2) {
     return strcmp(s1, s2) == 0;
 }
 
 static int is_valid_fstype(char const* s) {
-    return s &&
-        (streq(s, "ext2") ||
-         streq(s, "ext3") ||
-         streq(s, "ext4") ||
-         streq(s, "btrfs") ||
-         streq(s, "vfat"));
+    for (size_t i = 0; i < array_count(filesystems); ++i)
+        if (streq(s, filesystems[i]))
+            return 1;
+    return 0;
 }
 
 static int xsscanf(char const* fmt, size_t nparam, char const* args, ...) {
@@ -255,6 +263,10 @@ int main(int argc, char* argv[argc]) {
     }
     if (!is_valid_fstype(fstype)) {
         fprintf(stderr, "invalid fstype: %s\n", fstype);
+        fprintf(stderr, "fstype is one of:");
+        for (size_t i = 0; i < array_count(filesystems); ++i)
+            fprintf(stderr, " %s", filesystems[i]);
+        fprintf(stderr, "\n");
         return 1;
     }
 
