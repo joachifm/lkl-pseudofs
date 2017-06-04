@@ -92,7 +92,7 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         goto out;
     }
 
-    int outfd = lkl_sys_openat(mntdirfd, asrelpath(name), LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
+    int outfd = lkl_sys_openat(mntdirfd, name, LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (outfd < 0) {
         fprintf(stderr, "failed to open outfile for writing: %s\n",
                 lkl_strerror(outfd));
@@ -122,14 +122,14 @@ static int do_slink(char const name[PATH_MAX],
         char const target[PATH_MAX], mode_t mode, uid_t uid, gid_t gid) {
     int err = 0;
 
-    err = lkl_sys_symlinkat(target, mntdirfd, asrelpath(name));
+    err = lkl_sys_symlinkat(target, mntdirfd, name);
     if (err) {
         fprintf(stderr, "unable to symlink %s -> %s: %s\n",
                 name, target, lkl_strerror(err));
         goto out;
     }
 
-    err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, AT_SYMLINK_NOFOLLOW);
+    err = lkl_sys_fchownat(mntdirfd, name, uid, gid, AT_SYMLINK_NOFOLLOW);
     if (err) {
         fprintf(stderr, "unable to set ownership: %s\n",
                 lkl_strerror(err));
@@ -144,15 +144,15 @@ static int do_dir(char const name[PATH_MAX], mode_t mode, uid_t uid,
         gid_t gid) {
     int err = 0;
 
-    err = lkl_sys_mkdirat(mntdirfd, asrelpath(name), mode);
+    err = lkl_sys_mkdirat(mntdirfd, name, mode);
     if (err) { /* err != -LKL_EEXIST to ignore already existing dir */
         fprintf(stderr, "unable to create dir '%s': %s\n", name,
                 lkl_strerror(err));
         goto out;
     }
 
-    err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, 0);
-    if (err < 0) {
+    err = lkl_sys_fchownat(mntdirfd, name, uid, gid, 0);
+    if (err) {
         fprintf(stderr, "unable to set ownership: %s\n", lkl_strerror(err));
         goto out;
     }
@@ -172,13 +172,13 @@ static int do_nod(char const name[PATH_MAX], mode_t mode,
         type == 's' ? LKL_S_IFSOCK :
         LKL_S_IFREG;
 
-    err = lkl_sys_mknodat(mntdirfd, asrelpath(name), mode | typeflag, LKL_MKDEV(maj, min));
+    err = lkl_sys_mknodat(mntdirfd, name, mode | typeflag, LKL_MKDEV(maj, min));
     if (err) {
         fprintf(stderr, "failed to create node %s: %s\n", name, lkl_strerror(err));
         goto out;
     }
 
-    err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, 0);
+    err = lkl_sys_fchownat(mntdirfd, name, uid, gid, 0);
     if (err) {
         fprintf(stderr, "failed to set owner %s: %s\n", name, lkl_strerror(err));
         goto out;
@@ -353,34 +353,34 @@ int main(int argc, char* argv[argc]) {
             char infile[PATH_MAX];
             char const fmt[] = FMT_PATH " " FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 5, args, name, infile, &mode, &uid, &gid)))
-                err = do_file(name, infile, mode, uid, gid);
+                err = do_file(asrelpath(name), infile, mode, uid, gid);
         }
         else if (streq(type, "dir")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 4, args, name, &mode, &uid, &gid)))
-                err = do_dir(name, mode, uid, gid);
+                err = do_dir(asrelpath(name), mode, uid, gid);
         }
         else if (streq(type, "slink")) {
             char target[PATH_MAX];
             char const fmt[] = FMT_PATH " " FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 5, args, name, target, &mode, &uid, &gid)))
-                err = do_slink(name, target, mode, uid, gid);
+                err = do_slink(asrelpath(name), target, mode, uid, gid);
         }
         else if (streq(type, "nod")) {
             char devtype; int maj; int min;
             char const fmt[] = FMT_PATH " %o %d %d %c %d %d";
             if (!(err = xsscanf(fmt, 7, args, name, &mode, &uid, &gid, &devtype, &maj, &min)))
-                err = do_nod(name, mode, uid, gid, devtype, maj, min);
+                err = do_nod(asrelpath(name), mode, uid, gid, devtype, maj, min);
         }
         else if (streq(type, "pipe")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 4, args, name, &mode, &uid, &gid)))
-                err = do_pipe(name, mode, uid, gid);
+                err = do_pipe(asrelpath(name), mode, uid, gid);
         }
         else if (streq(type, "sock")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (!(err = xsscanf(fmt, 4, args, name, &mode, &uid, &gid)))
-                err = do_sock(name, mode, uid, gid);
+                err = do_sock(asrelpath(name), mode, uid, gid);
         }
         else {
             fprintf(stderr, "%s: unrecognized type: %s\n", progname, type);
