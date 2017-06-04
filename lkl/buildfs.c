@@ -165,24 +165,12 @@ static int do_nod(char const name[PATH_MAX], mode_t mode,
         uid_t uid, gid_t gid, char type, int maj, int min) {
     int err = 0;
 
-    int typeflag = LKL_S_IFREG;
-    switch (type) {
-        case 'c':
-            typeflag = LKL_S_IFCHR;
-            break;
-        case 'b':
-            typeflag = LKL_S_IFBLK;
-            break;
-        case 's':
-            typeflag = LKL_S_IFSOCK;
-            break;
-        case 'p':
-            typeflag = LKL_S_IFIFO;
-            break;
-        case 'r':
-            typeflag = LKL_S_IFREG;
-            break;
-    }
+    int typeflag =
+        type == 'c' ? LKL_S_IFCHR :
+        type == 'b' ? LKL_S_IFBLK :
+        type == 'p' ? LKL_S_IFIFO :
+        type == 's' ? LKL_S_IFSOCK :
+        LKL_S_IFREG;
 
     err = lkl_sys_mknodat(mntdirfd, asrelpath(name), mode | typeflag, LKL_MKDEV(maj, min));
     if (err) {
