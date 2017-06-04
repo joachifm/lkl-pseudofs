@@ -3,13 +3,15 @@ set -o errexit -o nounset
 
 cd "$(dirname "$0")"
 
-echo "Creating empty image ..." >&2
-truncate -s 128M fs.img
-yes | mkfs.ext4 -q fs.img
-truncate -s 100M large.file
-
 echo "Building ..." >&2
 prog=$(nix-build ../../lkl --no-out-link)
 
 echo "Running test ..." >&2
-$prog -t ext4 -P 0 -i fs.img < ./fs.spec
+truncate -s 100M large.file
+truncate -s 128M root.img
+yes | mkfs.ext4 -q root.img
+$prog -t ext4 -P 0 -i root.img < ./root.spec
+
+truncate -s 64M boot.img
+yes | mkfs.vfat -F32 boot.img
+$prog -t vfat -P 0 -i boot.img < ./boot.spec
