@@ -148,16 +148,17 @@ static int do_dir(char const name[PATH_MAX], mode_t mode, uid_t uid,
     if (err) { /* err != -LKL_EEXIST to ignore already existing dir */
         fprintf(stderr, "unable to create dir '%s': %s\n", name,
                 lkl_strerror(err));
-        return err;
+        goto out;
     }
 
     err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, 0);
     if (err < 0) {
         fprintf(stderr, "unable to set ownership: %s\n", lkl_strerror(err));
-        return err;
+        goto out;
     }
 
-    return 0;
+out:
+    return err;
 }
 
 static int do_nod(char const name[PATH_MAX], mode_t mode,
@@ -186,15 +187,16 @@ static int do_nod(char const name[PATH_MAX], mode_t mode,
     err = lkl_sys_mknodat(mntdirfd, asrelpath(name), mode | typeflag, LKL_MKDEV(maj, min));
     if (err) {
         fprintf(stderr, "failed to create node %s: %s\n", name, lkl_strerror(err));
-        return err;
+        goto out;
     }
 
     err = lkl_sys_fchownat(mntdirfd, asrelpath(name), uid, gid, 0);
     if (err) {
         fprintf(stderr, "failed to set owner %s: %s\n", name, lkl_strerror(err));
-        return err;
+        goto out;
     }
 
+out:
     return 0;
 }
 
@@ -259,7 +261,7 @@ int main(int argc, char* argv[argc]) {
 
     if (!fstype || strlen(fstype) == 0) {
         fprintf(stderr, "please specify a fs type\n");
-        return 1;
+        return EXIT_FAILURE;
     }
     if (!is_valid_fstype(fstype)) {
         fprintf(stderr, "invalid fstype: %s\n", fstype);
@@ -267,22 +269,22 @@ int main(int argc, char* argv[argc]) {
         for (size_t i = 0; i < array_count(filesystems); ++i)
             fprintf(stderr, " %s", filesystems[i]);
         fprintf(stderr, "\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (part < 0 || part > 128) {
         fprintf(stderr, "partition must be in [0,128]!\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (!imgpath || strlen(imgpath) == 0) {
         fprintf(stderr, "please specify a disk image path\n");
-        return 1;
+        return EXIT_FAILURE;
     }
     if (access(imgpath, O_RDWR) < 0) {
         fprintf(stderr, "unable to read/write image path '%s': %s\n",
                 imgpath, strerror(errno));
-        return 1;
+        return EXIT_FAILURE;
     }
 
     /*
