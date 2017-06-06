@@ -6,6 +6,11 @@
  * Jeff Garzik and others.
  */
 
+/* Copyright (C) 2017 Joachim F. <joachifm@fastmail.fm>
+ * Distributed under the terms of the GNU General Public License, version 2, or
+ * any later version.
+ */
+
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
