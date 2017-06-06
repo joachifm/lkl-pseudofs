@@ -82,7 +82,7 @@ static int do_file(char const name[PATH_MAX], char const infile[PATH_MAX],
         mode_t mode, uid_t uid, gid_t gid) {
     int err = 0;
 
-    int infd = open(infile, O_RDONLY, 0);
+    int infd = openat(AT_FDCWD, infile, O_RDONLY);
     if (infd < 0) {
         fprintf(stderr, "failed to open infile for reading: %s\n",
                 strerror(errno));
@@ -287,7 +287,7 @@ int main(int argc, char* argv[argc]) {
     struct lkl_disk disk = {0}; /* host disk handle */
     int disk_id = -1;
 
-    disk.fd = open(imgpath, O_RDWR);
+    disk.fd = openat(AT_FDCWD, imgpath, O_RDWR);
     if (disk.fd < 0) {
         fprintf(stderr, "failed to open %s for writing: %s\n", imgpath, strerror(errno));
         ret = EXIT_FAILURE;
