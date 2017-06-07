@@ -215,6 +215,7 @@ int main(int argc, char* argv[argc]) {
      */
 
     char const opts[] = "hvP:t:i:";
+    opterr = 0; /* provide our own warning message on ? */
     int optchar;
     while ((optchar = getopt(argc, argv, opts)) != -1) {
         switch (optchar) {
@@ -241,9 +242,12 @@ int main(int argc, char* argv[argc]) {
                        progname);
                 return EXIT_SUCCESS;
             case '?':
-                break;
+                fprintf(stderr, "%s: unrecognized option -%c\n"
+                        "Try '%s -h'\n",
+                        progname,
+                        optopt,
+                        progname);
             default:
-                fprintf(stderr, "%s: getopt returned %o ??\n", progname, optchar);
                 return EXIT_FAILURE;
         }
     }
