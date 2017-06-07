@@ -378,7 +378,9 @@ int main(int argc, char* argv[argc]) {
                 err = do_slink(asrelpath(name), target, mode, uid, gid);
         }
         else if (streq(type, "nod")) {
-            char devtype; int maj; int min;
+            char devtype;
+            int maj;
+            int min;
             char const fmt[] = FMT_PATH " %o %d %d %c %d %d";
             if (!(err = xsscanf(fmt, 7, args, name, &mode, &uid, &gid, &devtype, &maj, &min)))
                 err = do_nod(asrelpath(name), mode, uid, gid, devtype, maj, min);
