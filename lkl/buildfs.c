@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -45,7 +46,7 @@ static char* const filesystems[] = {
     "btrfs",
 };
 
-static inline int streq(char const* s1, char const* s2) {
+static inline bool streq(char const* s1, char const* s2) {
     return strcmp(s1, s2) == 0;
 }
 
@@ -202,9 +203,9 @@ int main(int argc, char* argv[argc]) {
     int part = 0;
     char fstype[FSTYPE_MAX] = {0};
     char imgpath[PATH_MAX] = {0};
-    int fstypeset = 0;
-    int fstypeknown = 0;
-    int imgpathset = 0;
+    bool fstypeset = false;
+    bool fstypeknown = false;
+    bool imgpathset = false;
 
     /*
      * Parse command-line
