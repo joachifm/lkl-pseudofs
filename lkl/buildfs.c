@@ -280,11 +280,6 @@ int main(int argc, char* argv[argc]) {
         fprintf(stderr, "please specify a disk image path\n");
         return EXIT_FAILURE;
     }
-    if (faccessat(AT_FDCWD, imgpath, R_OK | W_OK, 0) < 0) {
-        fprintf(stderr, "unable to read/write image path '%s': %s\n",
-                imgpath, strerror(errno));
-        return EXIT_FAILURE;
-    }
 
     /*
      * Prepare mounted filesystem image
@@ -405,9 +400,11 @@ int main(int argc, char* argv[argc]) {
     }
 
 out:
-    lkl_sys_close(mntdirfd);
-    lkl_umount_dev(disk_id, part, 0, 1000);
-    lkl_sys_halt();
-    close(disk.fd);
+    if (disk_id >= 0) {
+        lkl_sys_close(mntdirfd);
+        lkl_umount_dev(disk_id, part, 0, 1000);
+        lkl_sys_halt();
+        close(disk.fd);
+    }
     return ret;
 }
