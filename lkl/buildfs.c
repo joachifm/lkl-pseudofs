@@ -29,6 +29,18 @@
 
 #define array_count(X) (sizeof(X)/sizeof((X)[1]))
 
+static inline bool streq(char const* s1, char const* s2) { return strcmp(s1, s2) == 0; }
+
+static const char* asrelpath(const char* pathname) { return (*pathname == '/') ? ++pathname : pathname; }
+
+static int xsscanf(char const* fmt, size_t nparam, char const* args, ...) {
+    va_list ap;
+    va_start(ap, args);
+    ssize_t res = vsscanf(args, fmt, ap);
+    va_end(ap);
+    return res != nparam;
+}
+
 #define xstr(s) #s
 #define str(s) xstr(s)
 
@@ -45,22 +57,6 @@ static char* const filesystems[] = {
     "vfat",
     "btrfs",
 };
-
-static inline bool streq(char const* s1, char const* s2) {
-    return strcmp(s1, s2) == 0;
-}
-
-static int xsscanf(char const* fmt, size_t nparam, char const* args, ...) {
-    va_list ap;
-    va_start(ap, args);
-    ssize_t res = vsscanf(args, fmt, ap);
-    va_end(ap);
-    return res != nparam;
-}
-
-static const char* asrelpath(const char* pathname) {
-    return (*pathname == '/') ? ++pathname : pathname;
-}
 
 /* dirfd to the internal fs image mount path.  Used to manipulate paths within
  * the mounted file system image via *_at syscalls.  This is to avoid having to
