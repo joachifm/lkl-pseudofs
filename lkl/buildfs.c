@@ -49,13 +49,6 @@ static inline int streq(char const* s1, char const* s2) {
     return strcmp(s1, s2) == 0;
 }
 
-static int is_valid_fstype(char const* s) {
-    for (size_t i = 0; i < array_count(filesystems); ++i)
-        if (streq(s, filesystems[i]))
-            return 1;
-    return 0;
-}
-
 static int xsscanf(char const* fmt, size_t nparam, char const* args, ...) {
     va_list ap;
     va_start(ap, args);
@@ -210,6 +203,7 @@ int main(int argc, char* argv[argc]) {
     char fstype[FSTYPE_MAX] = {0};
     char imgpath[PATH_MAX] = {0};
     int fstypeset = 0;
+    int fstypeknown = 0;
     int imgpathset = 0;
 
     /*
@@ -264,7 +258,10 @@ int main(int argc, char* argv[argc]) {
         fprintf(stderr, "please specify a fs type\n");
         return EXIT_FAILURE;
     }
-    if (!is_valid_fstype(fstype)) {
+    for (size_t i = 0; i < array_count(filesystems); ++i)
+        if ((fstypeknown = streq(fstype, filesystems[i])))
+            break;
+    if (!fstypeknown) {
         fprintf(stderr, "invalid fstype: %s\n", fstype);
         fprintf(stderr, "fstype is one of:");
         for (size_t i = 0; i < array_count(filesystems); ++i)
