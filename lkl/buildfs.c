@@ -32,11 +32,11 @@
 #define xstr(s) #s
 #define str(s) xstr(s)
 
+#define PROGNAME "buildfs"
+
 #define FMT_PATH "%" str(PATH_MAX) "s"
 
 #define FSTYPE_MAX 64
-
-static char const progname[] = "buildfs";
 
 static char* const filesystems[] = {
     "ext2",
@@ -238,14 +238,14 @@ int main(int argc, char* argv[argc]) {
                        "\t-t FSTYPE\n"
                        "\t-i FILE\n"
                        "\t-P NUM\n",
-                       progname);
+                       PROGNAME);
                 return EXIT_SUCCESS;
             case '?':
                 fprintf(stderr, "%s: unrecognized option -%c\n"
                         "Try '%s -h'\n",
-                        progname,
+                        PROGNAME,
                         optopt,
-                        progname);
+                        PROGNAME);
             default:
                 return EXIT_FAILURE;
         }
@@ -341,7 +341,7 @@ int main(int argc, char* argv[argc]) {
             continue;
 
         if (!(type = strtok(line, " \t"))) {
-            fprintf(stderr, "%s: %ld: expected separator\n", progname, lineno);
+            fprintf(stderr, "%s: %ld: expected separator\n", PROGNAME, lineno);
             continue;
         }
 
@@ -349,7 +349,7 @@ int main(int argc, char* argv[argc]) {
             continue;
 
         if (!(args = strtok(0, "\n"))) {
-            fprintf(stderr, "%s: %ld: expected args\n", progname, lineno);
+            fprintf(stderr, "%s: %ld: expected args\n", PROGNAME, lineno);
             continue;
         }
 
@@ -396,7 +396,7 @@ int main(int argc, char* argv[argc]) {
                 err = do_sock(asrelpath(name), mode, uid, gid);
         }
         else {
-            fprintf(stderr, "%s: unrecognized type: %s\n", progname, type);
+            fprintf(stderr, "%s: unrecognized type: %s\n", PROGNAME, type);
             err = 1;
         }
     }
