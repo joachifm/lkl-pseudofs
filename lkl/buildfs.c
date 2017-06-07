@@ -209,6 +209,8 @@ int main(int argc, char* argv[argc]) {
     int part = 0;
     char fstype[FSTYPE_MAX] = {0};
     char imgpath[PATH_MAX] = {0};
+    int fstypeset = 0;
+    int imgpathset = 0;
 
     /*
      * Parse command-line
@@ -224,9 +226,11 @@ int main(int argc, char* argv[argc]) {
                 break;
             case 't':
                 strncpy(fstype, optarg, sizeof(fstype));
+                fstypeset = 1;
                 break;
             case 'i':
                 strncpy(imgpath, optarg, sizeof(imgpath));
+                imgpathset = 1;
                 break;
             case 'P':
                 part = atoi(optarg);
@@ -256,7 +260,7 @@ int main(int argc, char* argv[argc]) {
      * Validate inputs
      */
 
-    if (!fstype || strlen(fstype) == 0) {
+    if (!fstypeset) {
         fprintf(stderr, "please specify a fs type\n");
         return EXIT_FAILURE;
     }
@@ -274,7 +278,7 @@ int main(int argc, char* argv[argc]) {
         return EXIT_FAILURE;
     }
 
-    if (!imgpath || strlen(imgpath) == 0) {
+    if (!imgpathset) {
         fprintf(stderr, "please specify a disk image path\n");
         return EXIT_FAILURE;
     }
