@@ -279,7 +279,7 @@ int main(int argc, char* argv[argc]) {
         fprintf(stderr, "please specify a disk image path\n");
         return EXIT_FAILURE;
     }
-    if (access(imgpath, O_RDWR) < 0) {
+    if (faccessat(AT_FDCWD, imgpath, R_OK | W_OK, 0) < 0) {
         fprintf(stderr, "unable to read/write image path '%s': %s\n",
                 imgpath, strerror(errno));
         return EXIT_FAILURE;
