@@ -286,7 +286,7 @@ int main(int argc, char* argv[argc]) {
     }
 
     /*
-     * Process
+     * Prepare mounted filesystem image
      */
 
     struct lkl_disk disk = {0}; /* host disk handle */
@@ -294,7 +294,8 @@ int main(int argc, char* argv[argc]) {
 
     disk.fd = openat(AT_FDCWD, imgpath, O_RDWR);
     if (disk.fd < 0) {
-        fprintf(stderr, "failed to open %s for writing: %s\n", imgpath, strerror(errno));
+        fprintf(stderr, "failed to open %s for writing: %s\n", imgpath,
+                strerror(errno));
         ret = EXIT_FAILURE;
         goto out;
     }
@@ -325,6 +326,10 @@ int main(int argc, char* argv[argc]) {
         ret = EXIT_FAILURE;
         goto out;
     }
+
+    /*
+     * Process
+     */
 
     FILE* spec_list = stdin; /* the spec source */
     char line[2 * PATH_MAX + 64]; /* current spec line */
