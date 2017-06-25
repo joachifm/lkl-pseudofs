@@ -1,6 +1,7 @@
 Build filesystem image from a symbolic description
 
 * Syntax
+
 The syntax is the same as gen_init_cpio.c
 https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/usr/gen_init_cpio.c?id=HEAD
 
@@ -37,10 +38,3 @@ dir /root 0700 0 0
 dir /sbin 0755 0 0
 file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
 #+end_example
-
-* Implementation
-The implementation is essentially gen_init_cpio.c grafted onto lkl/cptofs.c.
-Like gen_init_cpio.c, each type has a designated handler.  Each handler, in turn,
-has a front-end that deals with parsing arguments that are handed off to a
-back-end.  The back-end uses lkl to construct entries within the
-filesystem image.
