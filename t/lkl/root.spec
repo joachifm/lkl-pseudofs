@@ -19,5 +19,5 @@ slink /boot/efi /efi 0700 0 0
 
 pipe /run/dbus-control-pipe 0666 0 0
 sock /run/dbus.socket 0666 0 0
-file /large.file large.file 0777 0 1000
+file /large.file build/large.file 0777 0 1000
 slink /the-file /large.file 0777 1000 0
