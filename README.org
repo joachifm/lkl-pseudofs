@@ -1,5 +1,21 @@
 Build filesystem image from a symbolic description
 
+* Usage
+
+** Create an unpartitioned EXT4 image
+
+#+begin_example
+$ truncate -s 512M image.ext4
+$ lkl-pseudofs -t ext4 -P 0 -i image.ext4 <<EOF
+# A simple initramfs
+dir /dev 0755 0 0
+nod /dev/console 0600 0 0 c 5 1
+dir /root 0700 0 0
+dir /sbin 0755 0 0
+file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
+EOF
+#+end_example
+
 * Syntax
 
 The syntax is the same as gen_init_cpio.c
@@ -15,11 +31,12 @@ nod <name> <mode> <uid> <gid> <dev_type> <maj> <min>
 slink <name> <target> <mode> <uid> <gid>
 pipe <name> <mode> <uid> <gid>
 sock <name> <mode> <uid> <gid>
-end_example
+#+end_example
 
 where
-- <name> names the file/dir/nod/&c in the archive
-- <location> source file; expands shell variables quoted with ${}
+- <name> names the file/dir/nod/&c in the pseudofs
+- <location> source file; expands shell variables quoted with =${}= (TODO:
+  not yet)
 - <target> link target
 - <mode> mode/perms
 - <uid> user id (0=root)
@@ -27,14 +44,4 @@ where
 - <dev_type> device type (b=block, c=char)
 - <maj> nod major number
 - <min> nod minor number
-- <hardlinks> space separated list of other links to file
-
-Example:
-#+begin_example
-# A simple initramfs
-dir /dev 0755 0 0
-nod /dev/console 0600 0 0 c 5 1
-dir /root 0700 0 0
-dir /sbin 0755 0 0
-file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
-#+end_example
+- <hardlinks> space separated list of other links to file (TODO)
