@@ -10,5 +10,5 @@ runCommandCC "buildfs"
   src = ./buildfs.c;
 }
 ''
-cc -llkl -o $out $src
+cc -DCONFIG_AUTO_LKL_POSIX_HOST -llkl -o $out $src
 ''
