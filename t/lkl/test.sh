@@ -2,7 +2,7 @@
 
 set -o errexit -o nounset
 
-uuid=rrrrrrrr-eeee-eeee-eeee-eeeeeeeeeeee
+uuid=eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee
 
 cd "$(dirname "$0")"
 
