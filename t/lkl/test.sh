@@ -20,7 +20,7 @@ truncate -s 64M build/boot.img
 mkfs.vfat --invariant -F32 build/boot.img >/dev/null
 
 echo "Building ..." >&2
-prog=$(nix-build ../../lkl --no-out-link)
+prog=$(nix-build --no-out-link ../../release.nix -A build)/bin/lkl-buildfs
 
 echo "Testing boot fs creation ..." >&2
 $prog -t vfat -P 0 -i build/boot.img < ./boot.spec

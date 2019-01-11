@@ -1,3 +1,5 @@
+#+TITLE: lkl-buildfs
+
 Build filesystem image from a symbolic description
 
 * Usage
@@ -5,16 +7,18 @@ Build filesystem image from a symbolic description
 ** Create an unpartitioned EXT4 image
 
 #+begin_example
-$ truncate -s 512M image.ext4
-$ lkl-pseudofs -t ext4 -P 0 -i image.ext4 <<EOF
-# A simple initramfs
-dir /dev 0755 0 0
-nod /dev/console 0600 0 0 c 5 1
-dir /root 0700 0 0
-dir /sbin 0755 0 0
-file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
-EOF
+  $ truncate -s 512M image.ext4
+  $ nix run -f release.nix build -c lkl-buildfs -t ext4 -P 0 -i image.ext4 <<EOF
+  # A simple initramfs
+  dir /dev 0755 0 0
+  nod /dev/console 0600 0 0 c 5 1
+  dir /root 0700 0 0
+  dir /sbin 0755 0 0
+  file /sbin/kinit /usr/src/klibc/kinit/kinit 0755 0 0
+  EOF
 #+end_example
+
+See [[file:t/lkl][more elaborate examples]].
 
 * Syntax
 
@@ -28,7 +32,7 @@ A line is one of:
 file <name> <location> <mode> <uid> <gid> [<hardlinks>]
 dir <name> <mode> <uid> <gid>
 nod <name> <mode> <uid> <gid> <dev_type> <maj> <min>
-slink <name> <target> <mode> <uid> <gid>
+slink <name> <target> <uid> <gid>
 pipe <name> <mode> <uid> <gid>
 sock <name> <mode> <uid> <gid>
 #+end_example
