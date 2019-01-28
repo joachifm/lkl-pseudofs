@@ -88,10 +88,10 @@ static bool streq(char const* restrict s1, char const* restrict s2) {
     return strcmp(s1, s2) == 0;
 }
 
-static size_t strlcpy(char* restrict dst, char const* restrict src, size_t siz) {
+static size_t strlcpy_notrunc(char* restrict dst, char const* restrict src, size_t siz) {
     int ret = snprintf(dst, siz, "%s", src);
     if (ret >= siz)
-        warnx("strlcpy: incomplete copy");
+        errx(EXIT_FAILURE, "strlcpy_notrunc: truncated output");
     if (ret < 0)
         err(EXIT_FAILURE, "snprintf");
     return ret;
@@ -258,13 +258,12 @@ void options(int* argc, char** argv[]) {
                   streq(optarg, "vfat") ||
                   streq(optarg, "xfs")))
                 errx(EXIT_FAILURE, "unknown fstype: %s", optarg);
-            strlcpy(prog.fstype, optarg, sizeof(prog.fstype));
+            strlcpy_notrunc(prog.fstype, optarg, sizeof(prog.fstype));
             fstypeset = 1;
             break;
 
         case 'i':
-            if (strlcpy(prog.imgfile, optarg, sizeof(prog.imgfile)) >= sizeof(prog.imgfile))
-                errx(EXIT_FAILURE, "imgfile path too long!");
+            strlcpy_notrunc(prog.imgfile, optarg, sizeof(prog.imgfile));
             imgfileset = 1;
             break;
 
