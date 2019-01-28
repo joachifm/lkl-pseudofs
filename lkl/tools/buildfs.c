@@ -94,7 +94,7 @@ static size_t strlcpy(char* restrict dst, char const* restrict src, size_t siz) 
     if (ret >= siz)
         warnx("strlcpy: incomplete copy");
     if (ret < 0)
-        err(1, "snprintf");
+        err(EXIT_FAILURE, "snprintf");
     return ret;
 }
 
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
             continue;
 
         if (!(type = strtok(line, " \t")))
-            errx(1, "%ld: expected separator", lineno);
+            errx(EXIT_FAILURE, "%ld: expected separator", lineno);
 
         if (*type == '\n' || slen == strlen(type)) /* blank line */
             continue;
@@ -177,18 +177,18 @@ int main(int argc, char* argv[]) {
             char infile[PATH_MAX];
             char const fmt[] = FMT_PATH " " FMT_PATH " %o %d %d";
             if (xsscanf(fmt, 5, args, name, infile, &mode, &uid, &gid) != 0)
-                errx(1, "line %ld: malformed file spec", lineno);
+                errx(EXIT_FAILURE, "line %ld: malformed file spec", lineno);
             do_file(asrelpath(name), infile, mode, uid, gid);
         } else if (streq(type, "dir")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (xsscanf(fmt, 4, args, name, &mode, &uid, &gid) != 0)
-                errx(1, "line %ld: malformed dir spec", lineno);
+                errx(EXIT_FAILURE, "line %ld: malformed dir spec", lineno);
             do_dir(asrelpath(name), mode, uid, gid);
         } else if (streq(type, "slink")) {
             char target[PATH_MAX];
             char const fmt[] = FMT_PATH " " FMT_PATH " %d %d";
             if (xsscanf(fmt, 4, args, name, target, &uid, &gid) != 0)
-                errx(1, "line %ld: malformed slink spec", lineno);
+                errx(EXIT_FAILURE, "line %ld: malformed slink spec", lineno);
             do_slink(asrelpath(name), target, uid, gid);
         } else if (streq(type, "nod")) {
             char devtype;
@@ -196,20 +196,20 @@ int main(int argc, char* argv[]) {
             int min;
             char const fmt[] = FMT_PATH " %o %d %d %c %d %d";
             if (xsscanf(fmt, 7, args, name, &mode, &uid, &gid, &devtype, &maj, &min) != 0)
-                errx(1, "line %ld: malformed nod spec", lineno);
+                errx(EXIT_FAILURE, "line %ld: malformed nod spec", lineno);
             do_special(asrelpath(name), mode, uid, gid, devtype, maj, min);
         } else if (streq(type, "pipe")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (xsscanf(fmt, 4, args, name, &mode, &uid, &gid) != 0)
-                errx(1, "line %ld: malformed pipe spec", lineno);
+                errx(EXIT_FAILURE, "line %ld: malformed pipe spec", lineno);
             do_pipe(asrelpath(name), mode, uid, gid);
         } else if (streq(type, "sock")) {
             char const fmt[] = FMT_PATH " %o %d %d";
             if (xsscanf(fmt, 4, args, name, &mode, &uid, &gid) != 0)
-                errx(1, "line %ld: malformed sock spec", lineno);
+                errx(EXIT_FAILURE, "line %ld: malformed sock spec", lineno);
             do_sock(asrelpath(name), mode, uid, gid);
         } else {
-            errx(1, "%s: unrecognized type: %s\n", PROGNAME, type);
+            errx(EXIT_FAILURE, "%s: unrecognized type: %s\n", PROGNAME, type);
         }
     }
 
@@ -300,20 +300,20 @@ void do_file(char const name[PATH_MAX],
 
     int infd = openat(AT_FDCWD, infile, O_RDONLY);
     if (infd < 0)
-        err(1, "failed to open %s for reading", infile);
+        err(EXIT_FAILURE, "failed to open %s for reading", infile);
 
     struct stat infile_stat;
     if (fstat(infd, &infile_stat) < 0)
-        err(1, "stat infile");
+        err(EXIT_FAILURE, "stat infile");
 
     ret = posix_fadvise(infd, 0, 0, POSIX_FADV_SEQUENTIAL);
     if (ret != 0)
-        errx(1, "failed to set usage advice: %s", strerror(ret));
+        errx(EXIT_FAILURE, "failed to set usage advice: %s", strerror(ret));
 
     int outfd = lkl_sys_openat(prog.relfd, relname,
             LKL_O_WRONLY | LKL_O_TRUNC | LKL_O_CREAT, mode);
     if (outfd < 0)
-        errx(1, "failed to open %s for writing: %s", name, lkl_strerror(outfd));
+        errx(EXIT_FAILURE, "failed to open %s for writing: %s", name, lkl_strerror(outfd));
 
     char cpbuf[BUFSIZ];
     ssize_t ibytes;
@@ -331,7 +331,7 @@ void do_file(char const name[PATH_MAX],
 
     ret = lkl_sys_fchown(outfd, uid, gid);
     if (ret < 0)
-        errx(1, "failed to chown: %s", lkl_strerror(ret));
+        errx(EXIT_FAILURE, "failed to chown: %s", lkl_strerror(ret));
 
     lkl_sys_close(outfd);
     close(infd);
@@ -342,18 +342,18 @@ void do_slink(char const name[PATH_MAX],
               const uid_t uid,
               const gid_t gid) {
     if (streq(prog.fstype, "vfat"))
-        errx(1, "entry type slink unsupported on vfat");
+        errx(EXIT_FAILURE, "entry type slink unsupported on vfat");
 
     int ret = 0;
     char const* relname = asrelpath(name);
 
     ret = lkl_sys_symlinkat(target, prog.relfd, relname);
     if (ret && ret != -LKL_EEXIST)
-        errx(1, "symlink %s -> %s failed: %s", name, target, lkl_strerror(ret));
+        errx(EXIT_FAILURE, "symlink %s -> %s failed: %s", name, target, lkl_strerror(ret));
 
     ret = lkl_sys_fchownat(prog.relfd, relname, uid, gid, AT_SYMLINK_NOFOLLOW);
     if (ret)
-        errx(1, "failed chown %d.%d %s: %s", uid, gid, name, lkl_strerror(ret));
+        errx(EXIT_FAILURE, "failed chown %d.%d %s: %s", uid, gid, name, lkl_strerror(ret));
 }
 
 void do_dir(char const name[PATH_MAX],
@@ -365,11 +365,11 @@ void do_dir(char const name[PATH_MAX],
 
     ret = lkl_sys_mkdirat(prog.relfd, relname, mode);
     if (ret && ret != -LKL_EEXIST)
-        errx(1, "mkdir '%s': %s", name, lkl_strerror(ret));
+        errx(EXIT_FAILURE, "mkdir '%s': %s", name, lkl_strerror(ret));
 
     ret = lkl_sys_fchownat(prog.relfd, relname, uid, gid, 0);
     if (ret)
-        errx(1, "failed chown %d.%d %s: %s", uid, gid, name, lkl_strerror(ret));
+        errx(EXIT_FAILURE, "failed chown %d.%d %s: %s", uid, gid, name, lkl_strerror(ret));
 }
 
 void do_special(char const name[PATH_MAX],
@@ -391,9 +391,9 @@ void do_special(char const name[PATH_MAX],
 
     ret = lkl_sys_mknodat(prog.relfd, relname, mode | typeflag, LKL_MKDEV(maj, min));
     if (ret && ret != -LKL_EEXIST)
-        errx(1, "failed to mknod %s: %s", name, lkl_strerror(ret));
+        errx(EXIT_FAILURE, "failed to mknod %s: %s", name, lkl_strerror(ret));
 
     ret = lkl_sys_fchownat(prog.relfd, relname, uid, gid, 0);
     if (ret)
-        errx(1, "failed chown %d.%d %s: %s", uid, gid, name, lkl_strerror(ret));
+        errx(EXIT_FAILURE, "failed chown %d.%d %s: %s", uid, gid, name, lkl_strerror(ret));
 }
