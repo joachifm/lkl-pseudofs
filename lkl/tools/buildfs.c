@@ -35,11 +35,12 @@
 /* Size of buffer holding the fstype spec, including NUL */
 #define FSTYPE_MAX 12
 
-#define xstr(s) #s
-#define str(s) xstr(s)
+/* CPP stringification */
+#define XSTR(s) #s
+#define STR(s) XSTR(s)
 
 /* Format spec for parsing file paths with scanf */
-#define FMT_PATH "%" str(PATH_MAX) "s"
+#define FMT_PATH "%" STR(PATH_MAX) "s"
 
 /* Program globals */
 static struct {
