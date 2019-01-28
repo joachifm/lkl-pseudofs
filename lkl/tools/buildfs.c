@@ -44,8 +44,6 @@
 
 /* Program globals */
 static struct {
-    char const* argv0;
-
     int verbosity;
 
     char fstype[FSTYPE_MAX];
@@ -240,7 +238,6 @@ void options(int* argc, char** argv[]) {
     int imgfileset = 0;
     int optc = -1;
 
-    prog.argv0 = (*argv)[0];
     opterr = 0; /* provide our own warning message on '?' */
 
     while ((optc = getopt(*argc, *argv, "t:i:P:hev")) != -1) {
